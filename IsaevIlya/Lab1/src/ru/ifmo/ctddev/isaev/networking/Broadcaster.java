@@ -4,43 +4,23 @@ import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Enumeration;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.Arrays;
+import java.util.UUID;
+
+import static ru.ifmo.ctddev.isaev.networking.Main.*;
 
 /**
  * @author Ilya Isaev
  */
 public class Broadcaster implements Runnable {
-    public static final int PACKET_LENGTH = 128;
-    private static final Executor executor = Executors.newFixedThreadPool(2);
-    public static int PORT = 4445;
-    public static String HOSTNAME;
 
 
-    public static void main(String[] args) {
-        if (args.length != 2) {
-            System.out.println("Expected two arguments: <hostname> <port>");
-        }
-        PORT = Integer.parseInt(args[1]);
-        HOSTNAME = args[0];
-        executor.execute(new Broadcaster());
-        executor.execute(new Receiver());
-    }
-
-    public static InetAddress getBroadcastAddress() throws SocketException {
-        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-        while (interfaces.hasMoreElements()) {
-            NetworkInterface networkInterface = interfaces.nextElement();
-            if (networkInterface.isLoopback()) {
-                continue;
-            }
-            for (InterfaceAddress interfaceAddress :
-                    networkInterface.getInterfaceAddresses()) {
-                InetAddress broadcast = interfaceAddress.getBroadcast();
-                if (broadcast != null) {
-                    return broadcast;
-                }
+    public static InetAddress getBroadcastAddress(NetworkInterface network) throws SocketException {
+        for (InterfaceAddress interfaceAddress :
+                network.getInterfaceAddresses()) {
+            InetAddress broadcast = interfaceAddress.getBroadcast();
+            if (broadcast != null) {
+                return broadcast;
             }
         }
         return null;
@@ -49,13 +29,13 @@ public class Broadcaster implements Runnable {
     @Override
     public void run() {
         try {
-            InetAddress broadCastAddress = getBroadcastAddress();
-            DatagramSocket socket = new DatagramSocket(PORT, InetAddress.getLocalHost());
+            DatagramSocket socket = new DatagramSocket(PORT);
             socket.setBroadcast(true);
             NetworkInterface network = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
-            byte[] mac = network.getHardwareAddress();
+            byte[] mac = Arrays.copyOf(UUID.randomUUID().toString().getBytes(), 6);
             byte[] host = HOSTNAME.getBytes(StandardCharsets.UTF_8);
-            ByteBuffer header = ByteBuffer.allocate(mac.length + 1 + host.length);
+            ByteBuffer header = ByteBuffer.allocate(7 + host.length);
+            InetAddress broadCastAddress = getBroadcastAddress(network);
             header.put(mac);
             header.put((byte) host.length);
             header.put(host);
@@ -63,7 +43,7 @@ public class Broadcaster implements Runnable {
                 ByteBuffer toSend = ByteBuffer.allocate(PACKET_LENGTH);
                 toSend.put(header.array());
                 toSend.putLong(System.currentTimeMillis());
-                DatagramPacket packet = new DatagramPacket(toSend.array(), toSend.array().length, broadCastAddress, 4445);
+                DatagramPacket packet = new DatagramPacket(toSend.array(), toSend.array().length, broadCastAddress, 4446);
                 socket.send(packet);
                 Thread.sleep(5000);
             }
@@ -71,4 +51,6 @@ public class Broadcaster implements Runnable {
             e.printStackTrace();
         }
     }
+
+
 }
