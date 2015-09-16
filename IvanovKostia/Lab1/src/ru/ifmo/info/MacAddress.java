@@ -1,4 +1,4 @@
-package ru.ifmo.broadcast;
+package ru.ifmo.info;
 
 import java.util.Arrays;
 

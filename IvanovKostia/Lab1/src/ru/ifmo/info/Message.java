@@ -1,7 +1,5 @@
 package ru.ifmo.info;
 
-import ru.ifmo.broadcast.MacAddress;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
