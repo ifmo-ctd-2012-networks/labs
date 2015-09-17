@@ -8,12 +8,12 @@ import java.nio.charset.StandardCharsets;
  */
 public class Message {
 
-    private final MacAddress mac;
+    private final MacAddress macAddress;
     private final String hostname;
     private final long timestamp;
 
-    public Message(MacAddress mac, String hostname, long timestamp) {
-        this.mac = mac;
+    public Message(MacAddress macAddress, String hostname, long timestamp) {
+        this.macAddress = macAddress;
         this.hostname = hostname;
         this.timestamp = timestamp;
     }
@@ -23,7 +23,7 @@ public class Message {
 
         byte[] mac = new byte[6];
         buffer = buffer.get(mac, 0, 6);
-        this.mac = new MacAddress(mac);
+        this.macAddress = new MacAddress(mac);
 
         int hostnameLength = buffer.get();
         byte[] hostname = new byte[hostnameLength];
@@ -34,7 +34,7 @@ public class Message {
     }
 
     public byte[] getBytes() {
-        byte[] mac = this.mac.getBytes();
+        byte[] mac = this.macAddress.getBytes();
         assert hostname.length() < 256;
         byte length = (byte) hostname.length();
         byte[] bytes = hostname.getBytes(StandardCharsets.UTF_8);
@@ -46,8 +46,16 @@ public class Message {
         return buffer.array();
     }
 
+    public MacAddress getMacAddress() {
+        return macAddress;
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
     @Override
     public String toString() {
-        return "Message[mac=" + mac + ", hostname=" + hostname + ", timestamp=" + timestamp + "]";
+        return "Message[macAddress=" + macAddress + ", hostname=" + hostname + ", timestamp=" + timestamp + "]";
     }
 }

@@ -11,16 +11,15 @@ import java.net.DatagramSocket;
  */
 public class Receiver implements Runnable {
 
-    private OnRecievedListener listener;
+    private final static int PACKET_LENGTH = 6 * Byte.BYTES + Byte.BYTES + 6 * 256 * Byte.BYTES + Long.BYTES;
     private final int port;
+    private OnReceivedListener listener;
 
     public Receiver(int port) {
         this.port = port;
     }
 
-    private int PACKET_LENGTH = 512;
-
-    public void setOnSuccessListener(OnRecievedListener listener) {
+    public void setOnSuccessListener(OnReceivedListener listener) {
         this.listener = listener;
     }
 
@@ -28,7 +27,7 @@ public class Receiver implements Runnable {
     public void run() {
         try {
             DatagramSocket socket = new DatagramSocket(port);
-            while (true) {
+            while (!Thread.interrupted()) {
                 DatagramPacket packet = new DatagramPacket(new byte[PACKET_LENGTH], PACKET_LENGTH);
                 socket.receive(packet);
                 Message message = new Message(packet.getData());
@@ -42,11 +41,7 @@ public class Receiver implements Runnable {
     }
 
     @FunctionalInterface
-    public interface OnRecievedListener {
+    public interface OnReceivedListener {
         void onSuccess(Message message);
-    }
-
-    protected class Response {
-
     }
 }
