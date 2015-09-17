@@ -21,8 +21,9 @@ public class Receiver implements Runnable {
                 DatagramPacket packet = new DatagramPacket(new byte[PACKET_LENGTH], PACKET_LENGTH);
                 socket.receive(packet);
                 Message message = parseRelative(packet.getData());
-                BroadcasterInfo info = new BroadcasterInfo(message.mac);
-                broadcasters.add(info);
+                System.out.println("Received message: " + message);
+                BroadcasterInfo info = new BroadcasterInfo(message);
+                broadcasters.putIfAbsent(info.mac, info);
                 pendingMessages.put(message.mac, message);
             }
         } catch (IOException e) {
@@ -38,7 +39,7 @@ public class Receiver implements Runnable {
         message.mac = new String(mac, StandardCharsets.UTF_8);
         int hostnameLength = buffer.get();
         byte[] hostname = new byte[hostnameLength];
-        buffer = buffer.get(hostname, 7, hostnameLength);
+        buffer = buffer.get(hostname, 0, hostnameLength);
         message.hostname = new String(hostname, StandardCharsets.UTF_8);
         message.timestamp = buffer.getLong();
         return message;

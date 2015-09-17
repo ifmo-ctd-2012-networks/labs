@@ -1,9 +1,8 @@
 package ru.ifmo.ctddev.isaev.networking;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.TreeMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -13,14 +12,11 @@ import java.util.concurrent.Executors;
 public class Main {
 
     public static final int PACKET_LENGTH = 128;
+    public static final Map<String, BroadcasterInfo> broadcasters = new TreeMap<>(String::compareTo);
+    public static final Map<String, Message> pendingMessages = new HashMap<>();
     private static final Executor executor = Executors.newFixedThreadPool(3);
     public static int PORT = 4445;
     public static String HOSTNAME;
-    public static Set<BroadcasterInfo> broadcasters = new ConcurrentSkipListSet<>((o1, o2) -> {
-        return o1.mac.compareTo(o2.mac);
-    });
-    public static Map<String, Message> pendingMessages = new ConcurrentHashMap<>();
-
 
     public static void main(String[] args) {
         if (args.length != 2) {

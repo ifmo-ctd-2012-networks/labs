@@ -5,9 +5,11 @@ package ru.ifmo.ctddev.isaev.networking;
  */
 public class BroadcasterInfo {
     String mac;
-    int skippedAnnounce = 0;
+    String hostname;
+    int skippedAnnounces = 0;
 
-    public BroadcasterInfo(String mac) {
-        this.mac = mac;
+    public BroadcasterInfo(Message msg) {
+        this.mac = msg.mac;
+        this.hostname = msg.hostname;
     }
 }
