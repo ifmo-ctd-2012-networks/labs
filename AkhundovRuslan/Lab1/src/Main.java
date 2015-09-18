@@ -1,5 +1,6 @@
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * @author korektur
@@ -7,18 +8,24 @@ import java.net.UnknownHostException;
  */
 public class Main {
 
-    public static void main(String[] args) throws SocketException, UnknownHostException {
+    public static void main(String[] args) throws SocketException, UnknownHostException, InterruptedException {
         Server server = new Server(8080);
-//        Server server2 = new Server(8889, 8080);
-//        Server server3 = new Server(8887, 8080);
         Thread serverThread = new Thread(server);
-//        Thread serverThread2 = new Thread(server2);
-//        Thread serverThread3 = new Thread(server3);
-        Client client1 = new Client(8080);
-        Thread threadClient1 = new Thread(client1);
+
+        ConcurrentLinkedQueue<Packet> packetsQueue = new ConcurrentLinkedQueue<>();
+
+        Client client = new Client(8080, packetsQueue);
+        Thread threadClient = new Thread(client);
+
+        Printer printer = new Printer(packetsQueue);
+        Thread printerThread = new Thread(printer);
+
         serverThread.start();
-//        serverThread2.start();
-//        serverThread3.start();
-        threadClient1.start();
+        threadClient.start();
+        printerThread.start();
+
+        printerThread.join();
+        threadClient.join();
+        serverThread.join();
     }
 }

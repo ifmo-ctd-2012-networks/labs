@@ -1,4 +1,5 @@
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
@@ -14,7 +15,7 @@ public class Server implements Runnable {
     private static final Charset CHARSET = StandardCharsets.UTF_8;
 
     private final int port;
-    private final String pack;
+    private final byte[] bytes;
 
     public Server(int clientPort) throws SocketException, UnknownHostException {
         this.port = clientPort;
@@ -34,16 +35,25 @@ public class Server implements Runnable {
 
         String hostname = InetAddress.getLocalHost().getHostName();
 
-        pack = sb.append(hostname.length()).append(hostname).toString();
+        byte[] hostnameBytes = hostname.getBytes(CHARSET);
+        byte[] len = {(byte)hostnameBytes.length};
+        bytes = mergeRequestParts(macAddress, mergeRequestParts(len, hostnameBytes));
     }
+
+    private static byte[] mergeRequestParts(byte[] fst, byte[] snd) {
+        byte[] merged = new byte[fst.length + snd.length];
+        System.arraycopy(fst, 0, merged, 0, fst.length);
+        System.arraycopy(snd, 0, merged, fst.length, snd.length);
+        return merged;
+    }
+
 
     @Override
     public void run() {
         try (DatagramSocket socket = new DatagramSocket()) {
             socket.setBroadcast(true);
 
-            //noinspection InfiniteLoopStatement
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
 
                 long startTime = System.currentTimeMillis();
 
@@ -63,12 +73,12 @@ public class Server implements Runnable {
 
                         try {
                             long timestamp = System.currentTimeMillis();
-                            byte[] toSend = (pack + timestamp).getBytes(CHARSET);
+                            byte[] timestampBytes = ByteBuffer.allocate(Long.SIZE / Byte.SIZE).putLong(timestamp).array();
 
+                            byte[] toSend = mergeRequestParts(bytes, timestampBytes);
                             DatagramPacket sendPacket = new DatagramPacket(toSend, toSend.length, broadcast, port);
                             socket.send(sendPacket);
 
-                            LOG.info("Server sent message: " + (new String(toSend, CHARSET)) + " to port " + port);
                         } catch (Exception e) {
                             LOG.log(Level.SEVERE, "Exception while trying to send packet", e);
                         }

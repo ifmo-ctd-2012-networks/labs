@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.net.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -9,12 +10,14 @@ import java.util.logging.Logger;
  */
 public class Client implements Runnable {
     private static final Logger LOG = Logger.getLogger(Client.class.getName());
-    private static final int SO_TIMEOUT = 5000;
+    private static final int SO_TIMEOUT = 6000;
 
     private final int PORT;
+    private final ConcurrentLinkedQueue<Packet> queue;
 
-    public Client(int port) {
+    public Client(int port, ConcurrentLinkedQueue<Packet> queue) {
         PORT = port;
+        this.queue = queue;
     }
 
     @Override
@@ -22,31 +25,23 @@ public class Client implements Runnable {
         try (DatagramSocket c = new DatagramSocket(PORT)) {
             c.setBroadcast(true);
             c.setSoTimeout(SO_TIMEOUT);
-            //noinspection InfiniteLoopStatement
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
 
-                byte[] recvBuf = new byte[15000];
-                DatagramPacket receivePacket = new DatagramPacket(recvBuf, recvBuf.length);
-                long startTime = System.currentTimeMillis();
+                byte[] receiveBuf = new byte[15000];
+                DatagramPacket receivePacket = new DatagramPacket(receiveBuf, receiveBuf.length);
 
                 try {
                     c.receive(receivePacket);
 
-                    String message = new String(receivePacket.getData()).trim();
-                    LOG.info(PORT + ": " + message);
+                    Packet packet = new Packet(receivePacket);
+                    queue.add(packet);
+//                    LOG.info(packet.toString());
+                } catch (SocketTimeoutException e) {
+                    LOG.info("Socket timeout");
                 } catch (IOException e) {
                     LOG.log(Level.SEVERE, e.getMessage(), e);
                 }
 
-                long finishTime = System.currentTimeMillis();
-
-                if (finishTime - startTime < 5000) {
-                    try {
-                        Thread.sleep(5000 - (finishTime - startTime));
-                    } catch (InterruptedException e) {
-                        LOG.log(Level.SEVERE, e.getMessage(), e);
-                    }
-                }
             }
         } catch (SocketException e) {
             LOG.log(Level.SEVERE, e.getMessage(), e);
