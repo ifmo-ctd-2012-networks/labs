@@ -45,7 +45,7 @@ def listener(on_message_callback=None, port=DEFAULT_PORT, loop=None):
     logger = logging.getLogger('Listener:{}'.format(port))
     loop = loop or asyncio.get_event_loop()
 
-    broadcast_address = ('<broadcast>', port)
+    broadcast_address = ('', port)
     broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     broadcast_socket.setblocking(0)
     broadcast_socket.bind(broadcast_address)
