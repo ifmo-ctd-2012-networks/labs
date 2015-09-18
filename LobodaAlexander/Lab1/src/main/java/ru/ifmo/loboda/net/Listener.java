@@ -1,6 +1,7 @@
 package ru.ifmo.loboda.net;
 
 import java.io.IOException;
+import java.net.BindException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
@@ -37,8 +38,12 @@ public class Listener implements Runnable {
                     }
                 } catch (IOException ignored) {}
             }
+        } catch (BindException e) {
+            System.err.println("Announcer is already working");
+            System.exit(1);
         } catch (SocketException e) {
-            e.printStackTrace();
+            System.err.println("Crashed");
+            System.exit(1);
         }
     }
 }
