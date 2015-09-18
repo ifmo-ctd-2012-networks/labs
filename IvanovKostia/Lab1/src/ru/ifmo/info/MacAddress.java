@@ -8,6 +8,8 @@ public class MacAddress implements Comparable<MacAddress> {
     public final byte[] value;
 
     public MacAddress(byte[] value) {
+        if (value.length != SIZE)
+            throw new IllegalStateException(String.format("Accept only byte arrays of length %d, but %d was given", SIZE, value.length));
         this.value = value;
     }
 
@@ -23,9 +25,6 @@ public class MacAddress implements Comparable<MacAddress> {
     @Override
     public int compareTo(MacAddress other) {
         byte[] otherValue = other.value;
-        if (value.length != otherValue.length)
-            return Integer.compare(value.length, otherValue.length);
-
         for (int i = 0; i < value.length; i++) {
             if (value[i] != otherValue[i]) return Byte.compare(value[i], otherValue[i]);
         }
