@@ -5,13 +5,17 @@ import ru.ifmo.info.Message;
 import ru.ifmo.info.NodeInfo;
 import ru.ifmo.network.DatagramReceiver;
 import ru.ifmo.network.DatagramSender;
+import ru.ifmo.threads.ClosableRunnable;
 
 import java.io.IOException;
+import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
-public class BroadcastAnnouncer {
+public class BroadcastAnnouncer implements AutoCloseable {
     /**
      * Which number of missing packets in a row is enough for considering node as lost
      */
@@ -21,79 +25,106 @@ public class BroadcastAnnouncer {
 
     private int port;
     private long sendDelay;
-
     private final NodeInfo myNodeInfo;
 
-    private boolean isClosed = false;
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     private Map<NodeInfo, Integer> missedPacketsCounter = new ConcurrentSkipListMap<>();
 
-    private Thread[] threads = new Thread[3];
+    private final ExecutorService executor;
 
-    public BroadcastAnnouncer(int port, long sendDelay) throws IOException {
-        this(port, sendDelay, NodeInfo.makeLocal());
-    }
+    private List<ClosableRunnable> servants;
 
-    public BroadcastAnnouncer(int port, long sendDelay, NodeInfo info) throws IOException {
+    public BroadcastAnnouncer(int port, long sendDelay, NetworkInterface network) throws IOException {
         this.port = port;
         this.sendDelay = sendDelay;
-        this.myNodeInfo = info;
+        this.myNodeInfo = Optional.ofNullable(NodeInfo.atNetworkInterface(network))
+                .orElseThrow(() -> new IllegalArgumentException("Cannot launch at network interface " + network));
+
+        this.servants = Arrays.asList(
+                new Sender(network),
+                new Receiver(),
+                new MissedPacketsListUpdater()
+        );
+        executor = Executors.newFixedThreadPool(servants.size());
     }
 
-    public BroadcastAnnouncer start() throws SocketException {
-        // receiver thread
-        threads[0] = new Thread(new DatagramReceiver(port){
-            protected void onReceive(byte[] bytes, int length) throws IOException {
-                Message message = new Message(bytes);
-                logger.info(String.format("[%s] - Received %s", myNodeInfo, message));
-
-                missedPacketsCounter.put(message.getNodeInfo(), -1);
+    public void run() throws SocketException {
+        List<Future<?>> futures = start();
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (ExecutionException e) {
+                logger.warn("Unexpected exception", e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                futures.forEach(future1 -> future.cancel(true));
+                break;
             }
-        });
-
-        // sender thread
-        threads[1] = new Thread(new DatagramSender(port, sendDelay){
-            protected void send() throws IOException {
-                if (Math.random() < 2. / 3.) return;
-
-                NodeInfo info = myNodeInfo;
-                Message message = info.toMessage();
-                sendBytes(message.toBytes());
-                logger.info(String.format("[%s] - Broadcast %s", info, message));
-            }
-        });
-
-        // list updater thread
-        threads[2] = new Thread(new MissedPacketsListUpdater());
-
-        for (Thread thread : threads) {
-            thread.start();
         }
-
-        return this;
     }
 
+    public List<Future<?>> start() throws SocketException {
+        return servants.stream()
+                .map(Thread::new)
+                .map(executor::submit)
+                .collect(Collectors.toList());
+    }
 
     public void close() {
-        if (isClosed) return;
-        isClosed = true;
+        if (closed.compareAndSet(false, true)) {
+            logger.info("Closing");
+            executor.shutdownNow();
 
-        for (Thread thread : threads) {
-            thread.interrupt();
-
-            // join even if this thread get interrupted in process
-            while (true) {
+            for (ClosableRunnable servant : servants) {
                 try {
-                    thread.join();
-                    break;
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                    servant.close();
+                } catch (Exception ignore) {
                 }
             }
         }
     }
 
-    private class MissedPacketsListUpdater implements Runnable {
+
+    private class Sender extends DatagramSender {
+        public Sender(NetworkInterface networkInterface) throws SocketException {
+            super(port, sendDelay, networkInterface);
+        }
+
+        protected void send() throws IOException {
+            NodeInfo info = myNodeInfo;
+            Message message = info.toMessage();
+            logger.info(String.format("[%s] - Broadcast %s", info, message));
+            sendBytes(message.toBytes());
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            BroadcastAnnouncer.this.close();
+        }
+    }
+
+    private class Receiver extends DatagramReceiver {
+        protected Receiver() throws SocketException {
+            super(port);
+        }
+
+        protected void onReceive(byte[] bytes, int length) throws IOException {
+            Message message = new Message(bytes);
+            logger.info(String.format("[%s] - Received %s", myNodeInfo, message));
+
+            missedPacketsCounter.put(message.getNodeInfo(), -1);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            BroadcastAnnouncer.this.close();
+        }
+    }
+
+    private class MissedPacketsListUpdater implements ClosableRunnable {
         @Override
         public void run() {
             try {
@@ -107,15 +138,22 @@ public class BroadcastAnnouncer {
         }
 
         public void updateList() {
+            logger.info(String.format("[%s] - List of active announcers:", myNodeInfo));
             missedPacketsCounter.forEach((info, value) -> {
                 int newVal = value + 1;
+                logger.info(String.format("[%s] -    :: %s (%d missed%s)", myNodeInfo, info, newVal, newVal >= LOST_THRESHOLD ? "!!" : ""));
+
                 if (newVal >= LOST_THRESHOLD) {
-                    logger.info(String.format("[%s] - %s have not been responding for too long", myNodeInfo, info));
                     missedPacketsCounter.remove(info);
                 } else {
                     missedPacketsCounter.put(info, newVal);
                 }
             });
+        }
+
+        @Override
+        public void close() {
+            BroadcastAnnouncer.this.close();
         }
     }
 }
