@@ -22,7 +22,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>org.foo.App</mainClass>
+                            <mainClass>ru.ifmo.ctddev.isaev.networking.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
