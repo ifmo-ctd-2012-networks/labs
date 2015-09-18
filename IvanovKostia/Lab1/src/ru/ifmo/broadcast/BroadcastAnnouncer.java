@@ -51,15 +51,17 @@ public class BroadcastAnnouncer implements AutoCloseable {
 
     public void run() throws SocketException {
         List<Future<?>> futures = start();
-        for (Future<?> future : futures) {
+
+
+        for (Iterator<Future<?>> iterator = futures.iterator(); iterator.hasNext(); ) {
+            Future<?> future = iterator.next();
             try {
                 future.get();
             } catch (ExecutionException e) {
                 logger.warn("Unexpected exception", e);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                futures.forEach(future1 -> future.cancel(true));
-                break;
+                iterator.forEachRemaining((f -> f.cancel(true)));
             }
         }
     }
