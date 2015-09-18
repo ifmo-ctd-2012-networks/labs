@@ -2,8 +2,7 @@ package ru.ifmo.ctddev.isaev.networking;
 
 import java.util.Arrays;
 
-import static ru.ifmo.ctddev.isaev.networking.Main.broadcasters;
-import static ru.ifmo.ctddev.isaev.networking.Main.pendingMessages;
+import static ru.ifmo.ctddev.isaev.networking.Main.*;
 
 /**
  * @author Ilya Isaev
@@ -32,14 +31,14 @@ public class Printer implements Runnable {
                                 .filter(key -> broadcasters.get(key).skippedAnnounces >= 5)
                                 .forEach((s) -> {
                                     BroadcasterInfo info = broadcasters.get(s);
-                                    System.out.println(String.format("Removed broadcaster with mac: %s, hostname = %s",
-                                            Arrays.toString(info.mac.getBytes()), info.hostname));
+                                    System.out.format("Removed broadcaster with mac: %s, hostname = %s because of 5 missed announces\n",
+                                            Arrays.toString(info.mac.getBytes()), info.hostname);
                                     broadcasters.remove(s);
                                 });
                         pendingMessages.clear();
                     }
                 }
-                Thread.sleep(5000);
+                Thread.sleep(SLEEP_TIME);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

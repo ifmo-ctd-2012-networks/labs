@@ -5,6 +5,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import static ru.ifmo.ctddev.isaev.networking.Main.*;
 
@@ -16,14 +17,17 @@ public class Receiver implements Runnable {
     @Override
     public void run() {
         try {
-            DatagramSocket socket = new DatagramSocket(4446);
+            DatagramSocket socket = new DatagramSocket(RECEIVER_PORT);
             while (true) {
                 DatagramPacket packet = new DatagramPacket(new byte[PACKET_LENGTH], PACKET_LENGTH);
                 socket.receive(packet);
                 Message message = parseRelative(packet.getData());
                 System.out.println("Received message: " + message);
                 BroadcasterInfo info = new BroadcasterInfo(message);
-                broadcasters.putIfAbsent(info.mac, info);
+                if (broadcasters.putIfAbsent(info.mac, info) == null) {
+                    System.out.format("Founded new neighbour: mac: %s, hostname: \"%s\"\n",
+                            Arrays.toString(info.mac.getBytes()), info.hostname);
+                }
                 pendingMessages.put(message.mac, message);
             }
         } catch (IOException e) {
