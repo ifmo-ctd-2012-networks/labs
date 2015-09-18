@@ -1,6 +1,7 @@
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,7 +21,7 @@ public class Printer implements Runnable {
 
     public Printer(ConcurrentLinkedQueue<Packet> packets) {
         this.packets = packets;
-        nodes = new HashMap<>();
+        nodes = new TreeMap<>();
         updated = new HashSet<>();
     }
 
