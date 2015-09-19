@@ -5,7 +5,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import static ru.ifmo.ctddev.isaev.networking.Main.*;
 
@@ -17,18 +16,22 @@ public class Receiver implements Runnable {
     @Override
     public void run() {
         try {
-            DatagramSocket socket = new DatagramSocket(RECEIVER_PORT);
+            DatagramSocket socket = new DatagramSocket(PORT);
             while (true) {
                 DatagramPacket packet = new DatagramPacket(new byte[PACKET_LENGTH], PACKET_LENGTH);
                 socket.receive(packet);
                 Message message = parseRelative(packet.getData());
                 System.out.println("Received message: " + message);
                 BroadcasterInfo info = new BroadcasterInfo(message);
-                if (broadcasters.putIfAbsent(info.mac, info) == null) {
-                    System.out.format("Founded new neighbour: mac: %s, hostname: \"%s\"\n",
-                            Arrays.toString(info.mac.getBytes()), info.hostname);
+                synchronized (broadcasters) {
+                    synchronized (pendingMessages) {
+                        if (broadcasters.putIfAbsent(info.mac, info) == null) {
+                            System.out.format("Founded new neighbour: mac: %d, hostname: \"%s\"\n",
+                                    info.mac, info.hostname);
+                        }
+                        pendingMessages.put(message.mac, message);
+                    }
                 }
-                pendingMessages.put(message.mac, message);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -40,7 +43,14 @@ public class Receiver implements Runnable {
         ByteBuffer buffer = ByteBuffer.wrap(data);
         byte[] mac = new byte[6];
         buffer = buffer.get(mac, 0, 6);
-        message.mac = new String(mac, StandardCharsets.UTF_8);
+        message.mac = 0L;
+        message.mac +=
+                ((long) mac[0] << 36) +
+                        ((long) mac[1] << 30) +
+                        ((long) mac[2] << 24) +
+                        ((long) mac[3] << 16) +
+                        ((long) mac[4] << 8) +
+                        ((long) mac[5]);
         int hostnameLength = buffer.get();
         byte[] hostname = new byte[hostnameLength];
         buffer = buffer.get(hostname, 0, hostnameLength);

@@ -4,7 +4,7 @@ package ru.ifmo.ctddev.isaev.networking;
  * @author Ilya Isaev
  */
 public class BroadcasterInfo {
-    String mac;
+    Long mac;
     String hostname;
     int skippedAnnounces = 0;
 

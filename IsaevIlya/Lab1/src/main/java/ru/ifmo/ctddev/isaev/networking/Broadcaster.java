@@ -29,7 +29,7 @@ public class Broadcaster implements Runnable {
     @Override
     public void run() {
         try {
-            DatagramSocket socket = new DatagramSocket(SENDER_PORT);
+            DatagramSocket socket = new DatagramSocket();
             socket.setBroadcast(true);
             NetworkInterface network = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
             byte[] mac = Arrays.copyOf(UUID.randomUUID().toString().getBytes(), 6);
@@ -44,7 +44,7 @@ public class Broadcaster implements Runnable {
                 toSend.put(header.array());
                 toSend.putLong(System.currentTimeMillis());
                 DatagramPacket packet = new DatagramPacket(toSend.array(),
-                        toSend.array().length, broadCastAddress, RECEIVER_PORT);
+                        toSend.array().length, broadCastAddress, PORT);
                 socket.send(packet);
                 Thread.sleep(SLEEP_TIME);
             }

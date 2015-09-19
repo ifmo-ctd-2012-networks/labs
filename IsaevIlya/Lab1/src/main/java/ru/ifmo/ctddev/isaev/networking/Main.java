@@ -13,11 +13,10 @@ public class Main {
 
     public static final int PACKET_LENGTH = 128;
     public static final int SLEEP_TIME = 5000;
-    public static final Map<String, BroadcasterInfo> broadcasters = new TreeMap<>(String::compareTo);
-    public static final Map<String, Message> pendingMessages = new HashMap<>();
+    public static final Map<Long, BroadcasterInfo> broadcasters = new TreeMap<>(Long::compareTo);
+    public static final Map<Long, Message> pendingMessages = new HashMap<>();
     private static final Executor executor = Executors.newFixedThreadPool(3);
-    public static int SENDER_PORT = 4445;
-    public static int RECEIVER_PORT;
+    public static int PORT = 4445;
     public static String HOSTNAME;
 
     public static void main(String[] args) {
@@ -26,9 +25,8 @@ public class Main {
             return;
         }
         if (args.length > 1) {
-            SENDER_PORT = Integer.parseInt(args[1]);
+            PORT = Integer.parseInt(args[1]);
         }
-        RECEIVER_PORT = SENDER_PORT + 1;
         HOSTNAME = args[0];
         executor.execute(new Broadcaster());
         executor.execute(new Receiver());
