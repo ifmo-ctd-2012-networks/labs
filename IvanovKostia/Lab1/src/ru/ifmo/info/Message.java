@@ -1,6 +1,7 @@
 package ru.ifmo.info;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Date;
 
@@ -19,7 +20,8 @@ public class Message implements Comparable<Message> {
 
     public Message(byte[] bytes) throws MessageParseException {
         try {
-            ByteBuffer buffer = ByteBuffer.wrap(bytes);
+            ByteBuffer buffer = ByteBuffer.wrap(bytes)
+                    .order(ByteOrder.BIG_ENDIAN);
 
             byte[] macBytes = new byte[MacAddress.SIZE];
             buffer.get(macBytes);
@@ -31,8 +33,8 @@ public class Message implements Comparable<Message> {
             String hostname = new String(hostnameBytes, Charset.forName("UTF-8"));
             info = new NodeInfo(mac, hostname);
 
-            timestamp = (long) buffer.getInt() * 1000;
-        } catch (ArrayIndexOutOfBoundsException e) {
+            timestamp = buffer.getLong() * 1000;
+        } catch (Exception e) {
             throw new MessageParseException();
         }
     }
@@ -46,11 +48,12 @@ public class Message implements Comparable<Message> {
     }
 
     public byte[] toBytes() {
-        return ByteBuffer.allocate(MacAddress.SIZE + 1 + info.getHostname().length() + Integer.BYTES / Byte.BYTES)
+        return ByteBuffer.allocate(MacAddress.SIZE + 1 + info.getHostname().length() + Long.BYTES / Byte.BYTES)
+                .order(ByteOrder.BIG_ENDIAN)
                 .put(info.getMacAdress().value)
                 .put((byte) info.getHostname().length())
                 .put(info.getHostname().getBytes(Charset.forName("UTF-8")))
-                .putInt((int) (timestamp / 1000))
+                .putLong((timestamp / 1000))
                 .array();
     }
 
