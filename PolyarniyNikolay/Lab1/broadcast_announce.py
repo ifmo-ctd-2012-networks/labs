@@ -125,10 +125,12 @@ if __name__ == '__main__':
                         format='%(relativeCreated)d [%(threadName)s]\t%(name)s [%(levelname)s]:\t %(message)s')
 
     args = sys.argv
-    if len(args) not in [2, 3]:
-        print('Usage: hostname [port]')
+    if len(args) not in [2, 3, 4]:
+        print('Usage: hostname [port] [delay]\n\n   delay - in seconds')
     else:
         hostname, port = args[1], DEFAULT_PORT
         if len(args) >= 3:
             port = int(args[2])
+        if len(args) >= 4:
+            DELAY_SECONDS = float(args[3])
         main(hostname, port)

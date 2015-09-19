@@ -1,7 +1,4 @@
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
@@ -52,22 +49,23 @@ public class Printer implements Runnable {
         }
         hashMap = hashMap.entrySet().stream().filter(e -> e.getValue().getLostPackets() < 5).
                 collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
         /*
-        TreeSet<Node> treeSet = hashMap.values().stream().collect(Collectors.toCollection(TreeSet::new));
-        for (Node node:treeSet) {
-
-        }
-        */
-
         for (Map.Entry<String, Node> entry : hashMap.entrySet()) {
-            String macAddress = entry.getKey();
             Node value = entry.getValue();
             value.setWas(false);
             Calendar calendar = Calendar.getInstance();
             calendar.setTime(value.getTimestamp());
             String time = calendar.get(Calendar.HOUR) + ":" + calendar.get(Calendar.MINUTE) + ":" +
                     calendar.get(Calendar.SECOND);
-            System.out.print(value.getHost() + " " + time + " lost=" + +value.getLostPackets() + " | ");
+            //System.out.print(value.getHost() + " " + time + " lost=" + +value.getLostPackets() + " | ");
         }
+        */
+        hashMap.entrySet()
+                .stream()
+                .sorted((e1, e2) -> e1.getValue().getMacAddress().compareTo(e2.getValue().getMacAddress()))
+                .forEach(e -> System.out.println(e.getValue().getMacAddress() + " | "));
+
+
     }
 }

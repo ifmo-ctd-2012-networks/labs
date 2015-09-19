@@ -10,7 +10,6 @@ import java.util.logging.Logger;
  */
 public class Client implements Runnable {
     private static final Logger LOG = Logger.getLogger(Client.class.getName());
-    private static final int SO_TIMEOUT = 6000;
 
     private final int PORT;
     private final ConcurrentLinkedQueue<Packet> queue;
@@ -24,7 +23,6 @@ public class Client implements Runnable {
     public void run() {
         try (DatagramSocket c = new DatagramSocket(PORT)) {
             c.setBroadcast(true);
-            c.setSoTimeout(SO_TIMEOUT);
             while (!Thread.currentThread().isInterrupted()) {
 
                 byte[] receiveBuf = new byte[15000];
