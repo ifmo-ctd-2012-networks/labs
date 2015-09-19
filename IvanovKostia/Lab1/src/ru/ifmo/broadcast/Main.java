@@ -15,7 +15,7 @@ public class Main {
         Thread stopWaiter = null;
         try {
             BroadcastAnnouncer announcer = new BroadcastAnnouncer(port, 5_000L, network);
-            stopWaiter = new Thread(new CommandAwaiter(announcer::close));
+            stopWaiter = new Thread(new StdinWaiter(announcer::close));
             stopWaiter.start();
 
             announcer.run();
@@ -27,10 +27,10 @@ public class Main {
 
     }
 
-    private static class CommandAwaiter implements Runnable {
+    private static class StdinWaiter implements Runnable {
         private final Runnable command;
 
-        public CommandAwaiter(Runnable command) {
+        public StdinWaiter(Runnable command) {
             this.command = command;
         }
 
@@ -40,7 +40,6 @@ public class Main {
                 System.in.read();
                 command.run();
             } catch (IOException ignored) {
-                int k = 5;
             }
         }
     }

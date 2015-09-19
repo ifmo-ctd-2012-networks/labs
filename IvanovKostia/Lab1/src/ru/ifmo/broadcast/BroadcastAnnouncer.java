@@ -2,6 +2,7 @@ package ru.ifmo.broadcast;
 
 import org.apache.log4j.Logger;
 import ru.ifmo.info.Message;
+import ru.ifmo.info.MessageParseException;
 import ru.ifmo.info.NodeInfo;
 import ru.ifmo.network.DatagramReceiver;
 import ru.ifmo.network.DatagramSender;
@@ -113,10 +114,14 @@ public class BroadcastAnnouncer implements AutoCloseable {
         }
 
         protected void onReceive(byte[] bytes, int length) throws IOException {
-            Message message = new Message(bytes);
-            logger.info(String.format("[%s] - Received %s", myNodeInfo, message));
+            try {
+                Message message = new Message(bytes);
+                logger.info(String.format("[%s] - Received %s", myNodeInfo, message));
+                missedPacketsCounter.put(message.getNodeInfo(), -1);
+            } catch (MessageParseException e) {
+                logger.warn(String.format("Received incorrect message (%s)", e.getMessage()));
+            }
 
-            missedPacketsCounter.put(message.getNodeInfo(), -1);
         }
 
         @Override

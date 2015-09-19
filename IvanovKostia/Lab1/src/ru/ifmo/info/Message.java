@@ -1,11 +1,7 @@
 package ru.ifmo.info;
 
-import ru.ifmo.util.PrimitiveDataConverter;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.Date;
 
 public class Message implements Comparable<Message> {
@@ -21,14 +17,24 @@ public class Message implements Comparable<Message> {
         this(info, System.currentTimeMillis());
     }
 
-    public Message(byte[] bytes) {
-        MacAddress mac = new MacAddress(Arrays.copyOf(bytes, MacAddress.SIZE));
+    public Message(byte[] bytes) throws MessageParseException {
+        try {
+            ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
-        byte hostnameSize = bytes[MacAddress.SIZE];
-        String hostname = new String(bytes, MacAddress.SIZE + 1, hostnameSize, Charset.forName("UTF-8"));
-        info = new NodeInfo(mac, hostname);
+            byte[] macBytes = new byte[MacAddress.SIZE];
+            buffer.get(macBytes);
+            MacAddress mac = new MacAddress(macBytes);
 
-        timestamp = PrimitiveDataConverter.bytesToLong(bytes, MacAddress.SIZE + 1 + hostnameSize) * 1000;
+            byte hostnameSize = buffer.get();
+            byte[] hostnameBytes = new byte[hostnameSize];
+            buffer.get(hostnameBytes);
+            String hostname = new String(hostnameBytes, Charset.forName("UTF-8"));
+            info = new NodeInfo(mac, hostname);
+
+            timestamp = (long) buffer.getInt() * 1000;
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new MessageParseException();
+        }
     }
 
     public NodeInfo getNodeInfo() {
@@ -40,17 +46,12 @@ public class Message implements Comparable<Message> {
     }
 
     public byte[] toBytes() {
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            bos.write(info.getMacAdress().value);
-            bos.write((byte) info.getHostname().length());
-            bos.write(info.getHostname().getBytes(Charset.forName("UTF-8")));
-            bos.write(PrimitiveDataConverter.longToBytes(timestamp / 1000));
-            return bos.toByteArray();
-        } catch (IOException e) {
-            // actually never throws
-            throw new Error("Something strange (exception is not expected here)");
-        }
+        return ByteBuffer.allocate(MacAddress.SIZE + 1 + info.getHostname().length() + Integer.BYTES / Byte.BYTES)
+                .put(info.getMacAdress().value)
+                .put((byte) info.getHostname().length())
+                .put(info.getHostname().getBytes(Charset.forName("UTF-8")))
+                .putInt((int) (timestamp / 1000))
+                .array();
     }
 
     @Override
