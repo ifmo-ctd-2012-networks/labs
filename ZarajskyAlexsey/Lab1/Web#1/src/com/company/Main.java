@@ -22,6 +22,8 @@ public class Main {
 		new Server().start();
 	}
 
+
+
 	static class Server extends Thread {
 
 		public void run() {
@@ -43,9 +45,19 @@ public class Main {
 						while (!isInterrupted()) {
 							dsocket.receive(packet);
 							synchronized (bufferDataMessage) {
-								Data message = new Data(Arrays.copyOf(packet.getData(), packet.getLength()));
-								Log.sendMessage("Server", "Get Message : " + Arrays.toString(message.getBytes()));
-								bufferDataMessage.add(message);
+								Data message = null;
+								try {
+									message = new Data(Arrays.copyOf(packet.getData(), packet.getLength()));
+									Log.sendMessage(
+											"Receiver",
+											"Get Message : " + Arrays.toString(message.getBytes()),
+											message.toString()
+									);
+									bufferDataMessage.add(message);
+								} catch (IllegalArgumentException | ArrayIndexOutOfBoundsException e) {
+									Log.sendMessage("Receiver", "Get bad data");
+								}
+
 							}
 						}
 					} catch (IOException e) {
@@ -95,6 +107,7 @@ public class Main {
 							"Client",
 							//"Time : " + data.unixTimeStamp,
 							"Send Message : " + Arrays.toString(message)
+							,data.toString()
 					);
 					DatagramPacket packet = new DatagramPacket(message, message.length,
 							InetAddress.getByName(broadcastIP), port);
@@ -117,14 +130,16 @@ public class Main {
 		public long unixTimeStamp;
 
 		public Data(byte[] data) {
-			macAddress = Arrays.copyOf(data, 6);
-			int length = data[6];
-			hostName = new String(Arrays.copyOfRange(data, 7, 7 + length), StandardCharsets.UTF_8);
-			unixTimeStamp = 0;
-			unixTimeStamp += (data[7 + length] & 0xffL) << 24;
-			unixTimeStamp += (data[7 + length + 1] & 0xffL) << 16;
-			unixTimeStamp += (data[7 + length + 2] & 0xffL) << 8;
-			unixTimeStamp += (data[7 + length + 3] & 0xffL);
+				if (data.length < 11) throw new IllegalArgumentException();
+				macAddress = Arrays.copyOf(data, 6);
+				int length = data[6];
+				hostName = new String(Arrays.copyOfRange(data, 7, 7 + length), StandardCharsets.UTF_8);
+				unixTimeStamp = 0;
+				unixTimeStamp += (data[7 + length] & 0xffL) << 24;
+				unixTimeStamp += (data[7 + length + 1] & 0xffL) << 16;
+				unixTimeStamp += (data[7 + length + 2] & 0xffL) << 8;
+				unixTimeStamp += (data[7 + length + 3] & 0xffL);
+
 		}
 
 		public Data() throws UnknownHostException, SocketException {
@@ -144,7 +159,6 @@ public class Main {
 					(byte) (unixTimeStamp >> 16),
 					(byte) (unixTimeStamp >> 8),
 					(byte) unixTimeStamp
-
 			};
 
 			for (byte b : productionDate) bytes.add(b);
@@ -161,6 +175,23 @@ public class Main {
 					Arrays.equals(macAddress,((Data) o).macAddress) &&
 					hostName.equals(oData.hostName) &&
 					Long.compare(unixTimeStamp, oData.unixTimeStamp) == 0;
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder builder = new StringBuilder();
+			builder.append(byteArrayToHex(macAddress)).append("\t");
+			builder.append("Name : ").append(hostName).append("\t");
+			builder.append("Time : ").append(unixTimeStamp);
+			return builder.toString();
+		}
+
+		private String byteArrayToHex(byte[] a) {
+			StringBuilder sb = new StringBuilder(a.length * 2);
+			for(byte b: a)
+				sb.append(String.format("%02X:", b & 0xff));
+			sb.setLength(sb.length() - 1);
+			return sb.toString();
 		}
 	}
 

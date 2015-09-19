@@ -10,7 +10,6 @@ import java.util.logging.Logger;
 
 public class Server implements Runnable {
     private static final Logger log = Logger.getLogger(Server.class.getName());
-    public static final boolean isIntTime = true;
     private final byte[] macAddress;
 
     public Server() {
@@ -72,14 +71,14 @@ public class Server implements Runnable {
 
     private byte[] buildSendData() {
         try {
-            String hostAddress = "Pasha Asadchiy " + InetAddress.getLocalHost().getHostName();
+            String hostAddress = "Pavel Asadchiy " + InetAddress.getLocalHost().getHostName();
             byte[] hostAddressBytes = hostAddress.getBytes(Charset.defaultCharset());
             byte[] hostAddressLengthBytes = new byte[1];
             hostAddressLengthBytes[0] = (byte) hostAddress.length();
-            long currentTimeSeconds = isIntTime ? (System.currentTimeMillis() / 1000) : System.currentTimeMillis();
-            byte[] timesTamp = isIntTime ? intToByteArray(currentTimeSeconds) : longToByteArray(currentTimeSeconds);
+            int currentTimeSeconds = (int) (System.currentTimeMillis() / 1000);
+            byte[] timesTamp = intToByteArray(currentTimeSeconds);
             log.info("Data to send: " + getNormalMacAddress() + " " + hostAddress + " "
-                    + hostAddress.length() + " " + new Date(currentTimeSeconds * (isIntTime ? 1000 : 1)));
+                    + hostAddress.length() + " " + new Date((long) currentTimeSeconds * 1000));
             return mergeByteArrays(mergeByteArrays(macAddress, hostAddressLengthBytes), mergeByteArrays(hostAddressBytes, timesTamp));
         } catch (UnknownHostException e) {
             log.severe("Can't get host, error message: " + e.getMessage());

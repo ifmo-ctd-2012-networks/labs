@@ -25,7 +25,11 @@ void split(const std::string &str, std::string &mac_addres, std::string &host_na
 
     host_name = std::string(str.begin() + length_mac + 1, str.begin() + length_mac + length + 1);
 
-    time = std::stoll(std::string(str.begin() + length_mac + length + 1, str.end()));
+    std::string t = (std::string(str.begin() + length_mac + length + 1, str.end()));
+
+    std::reverse(t.begin(), t.end());
+
+    time = *((long long*)(t.data()));
 }
 
 void start_client(int port, Writer *writer)

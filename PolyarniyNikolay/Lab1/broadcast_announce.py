@@ -85,7 +85,8 @@ def message_handler(queue, byteorder=DEFAULT_BYTE_ORDER, loop=None):
             return tabulate([[m, last_packet[m][2], last_packet[m][3], missed_packets[m]]
                              for m in sorted(macs)],
                             headers=['Mac', 'Hostname', 'Last packet timestamp', 'Missed packets'], tablefmt='grid')
-        logger.debug('Deleted broadcasters:\n' + to_table(macs_to_delete))
+        if len(macs_to_delete) > 0:
+            logger.info('Deleted broadcasters:\n' + to_table(macs_to_delete))
 
         for mac in macs_to_delete:
             tracked_macs.remove(mac)
@@ -103,7 +104,7 @@ def message_handler(queue, byteorder=DEFAULT_BYTE_ORDER, loop=None):
         sender_mac, data = int.from_bytes(data[:6], byteorder), data[6:]
         hostname_bytes_len, data = data[0], data[1:]
         hostname, data = str(data[:hostname_bytes_len], encoding=HOSTNAME_ENCODING), data[hostname_bytes_len:]
-        timestamp = int.from_bytes(data, byteorder)
+        timestamp = int.from_bytes(data[:8], byteorder)
 
         logger.info('Message received: "MAC={} hostname={} timestamp={}"'
                     .format(sender_mac, hostname, timestamp))
@@ -111,13 +112,22 @@ def message_handler(queue, byteorder=DEFAULT_BYTE_ORDER, loop=None):
 
 
 def main(hostname, port=DEFAULT_PORT):
+    logger = logging.getLogger('Main')
     messages_queue = asyncio.Queue()
 
-    asyncio.async(listener(lambda data: messages_queue.put_nowait(data), port))
-    asyncio.async(broadcaster(hostname, port))
-    asyncio.async(message_handler(messages_queue))
+    tasks = asyncio.gather(
+        asyncio.async(listener(lambda data: messages_queue.put_nowait(data), port)),
+        asyncio.async(broadcaster(hostname, port)),
+        asyncio.async(message_handler(messages_queue))
+    )
 
-    asyncio.get_event_loop().run_forever()
+    try:
+        asyncio.get_event_loop().run_until_complete(tasks)
+    except KeyboardInterrupt as e:
+        logger.info('Stopped by user.')
+        tasks.cancel()
+        asyncio.get_event_loop().run_forever()
+        tasks.exception()
 
 
 if __name__ == '__main__':
