@@ -30,7 +30,7 @@ public class Monitor {
             for (Pair<Long, Message> pair : lastReceived.values()) {
                 long timestamp = pair.getLeft();
                 Message msg = pair.getRight();
-                if (currentTime - timestamp > settings.getMissedThreshold() * settings.getInterval()) {
+                if (currentTime - timestamp > settings.getMissedThreshold() * settings.getInterval() * 1000) {
                     alive.remove(msg.getMacAddress());
                 } else {
                     alive.put(msg.getMacAddress(), msg);
@@ -42,7 +42,7 @@ public class Monitor {
                 sb.append("{")
                         .append(msg.getHostName())
                         .append(" 0x").append(Long.toHexString(msg.getMacAddress()))
-                        .append("}");
+                        .append("}, ");
             }
             System.out.println(sb);
 
