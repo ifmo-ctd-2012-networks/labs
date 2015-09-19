@@ -18,19 +18,24 @@ public class Receiver implements Runnable {
         try {
             DatagramSocket socket = new DatagramSocket(PORT);
             while (true) {
-                DatagramPacket packet = new DatagramPacket(new byte[PACKET_LENGTH], PACKET_LENGTH);
-                socket.receive(packet);
-                Message message = parseRelative(packet.getData());
-                System.out.println("Received message: " + message);
-                BroadcasterInfo info = new BroadcasterInfo(message);
-                synchronized (broadcasters) {
-                    synchronized (pendingMessages) {
-                        if (broadcasters.putIfAbsent(info.mac, info) == null) {
-                            System.out.format("Founded new neighbour: mac: %d, hostname: \"%s\"\n",
-                                    info.mac, info.hostname);
+                try {
+                    DatagramPacket packet = new DatagramPacket(new byte[PACKET_LENGTH], PACKET_LENGTH);
+                    socket.receive(packet);
+
+                    Message message = parseRelative(packet.getData());
+                    System.out.println("Received message: " + message);
+                    BroadcasterInfo info = new BroadcasterInfo(message);
+                    synchronized (broadcasters) {
+                        synchronized (pendingMessages) {
+                            if (broadcasters.putIfAbsent(info.mac, info) == null) {
+                                System.out.format("Founded new neighbour: mac: %d, hostname: \"%s\"\n",
+                                        info.mac, info.hostname);
+                            }
+                            pendingMessages.put(message.mac, message);
                         }
-                        pendingMessages.put(message.mac, message);
                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         } catch (IOException e) {

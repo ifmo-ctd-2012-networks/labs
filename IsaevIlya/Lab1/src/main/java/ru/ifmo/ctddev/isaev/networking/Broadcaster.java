@@ -40,15 +40,19 @@ public class Broadcaster implements Runnable {
             header.put((byte) host.length);
             header.put(host);
             while (true) {
-                ByteBuffer toSend = ByteBuffer.allocate(PACKET_LENGTH);
-                toSend.put(header.array());
-                toSend.putLong(System.currentTimeMillis());
-                DatagramPacket packet = new DatagramPacket(toSend.array(),
-                        toSend.array().length, broadCastAddress, PORT);
-                socket.send(packet);
-                Thread.sleep(SLEEP_TIME);
+                try {
+                    ByteBuffer toSend = ByteBuffer.allocate(PACKET_LENGTH);
+                    toSend.put(header.array());
+                    toSend.putLong(System.currentTimeMillis());
+                    DatagramPacket packet = new DatagramPacket(toSend.array(),
+                            toSend.array().length, broadCastAddress, PORT);
+                    socket.send(packet);
+                    Thread.sleep(SLEEP_TIME);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException | UnknownHostException | SocketException e) {
             e.printStackTrace();
         }
     }
