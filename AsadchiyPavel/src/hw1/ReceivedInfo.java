@@ -14,14 +14,14 @@ public class ReceivedInfo implements Comparable {
         byte[] macAddressBytes = Arrays.copyOfRange(packet, 0, 6);
         byte hostLength = Arrays.copyOfRange(packet, 6, 7)[0];
         byte[] hostBytes = Arrays.copyOfRange(packet, 7, 7 + hostLength);
-        byte[] timeBytes = Arrays.copyOfRange(packet, 7 + hostLength, 7 + (Server.isIntTime ? 4 : 8) + hostLength);
+        byte[] timeBytes = Arrays.copyOfRange(packet, 7 + hostLength, 7 + 4 + hostLength);
         macAddress = "";
         for (byte macAddressByte : macAddressBytes) {
             macAddress += String.format("-%02X", macAddressByte);
         }
         macAddress = macAddress.substring(1);
         host = new String(hostBytes, Charset.defaultCharset());
-        time = new Date(Server.isIntTime ? (long) intByBytes(timeBytes) * 1000 : longByBytes(timeBytes));
+        time = new Date((long) intByBytes(timeBytes) * 1000);
         counter = 0;
     }
 

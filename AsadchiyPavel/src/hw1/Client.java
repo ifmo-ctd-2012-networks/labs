@@ -19,7 +19,7 @@ public class Client implements Runnable {
         log.info("Client is ready to receive packets on port " + Main.port);
         try (DatagramSocket socket = new DatagramSocket(Main.port)) {
             socket.setBroadcast(true);
-            byte[] packetByte = new byte[1024 * 10]; // 10kb
+            byte[] packetByte = new byte[1024]; // 1kb
             DatagramPacket packet = new DatagramPacket(packetByte, packetByte.length);
             while (!Thread.interrupted()) {
                 try {
