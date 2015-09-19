@@ -78,7 +78,7 @@ public class Server implements Runnable {
             int currentTimeSeconds = (int) (System.currentTimeMillis() / 1000);
             byte[] timesTamp = intToByteArray(currentTimeSeconds);
             log.info("Data to send: " + getNormalMacAddress() + " " + hostAddress + " "
-                    + hostAddress.length() + " " + new Date(currentTimeSeconds * 1000));
+                    + hostAddress.length() + " " + new Date((long) currentTimeSeconds * 1000));
             return mergeByteArrays(mergeByteArrays(macAddress, hostAddressLengthBytes), mergeByteArrays(hostAddressBytes, timesTamp));
         } catch (UnknownHostException e) {
             log.severe("Can't get host, error message: " + e.getMessage());
