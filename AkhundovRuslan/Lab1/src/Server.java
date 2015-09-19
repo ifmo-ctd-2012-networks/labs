@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 public class Server implements Runnable {
     private static final Logger LOG = Logger.getLogger(Server.class.getName());
     private static final Charset CHARSET = StandardCharsets.UTF_8;
-
+    private static final int TIMEOUT = 5000;
     private final int port;
     private final byte[] bytes;
 
@@ -72,8 +72,8 @@ public class Server implements Runnable {
                         }
 
                         try {
-                            long timestamp = System.currentTimeMillis();
-                            byte[] timestampBytes = ByteBuffer.allocate(Long.SIZE / Byte.SIZE).putLong(timestamp).array();
+                            int timestamp = (int)(System.currentTimeMillis() / 1000L);
+                            byte[] timestampBytes = ByteBuffer.allocate(Integer.SIZE / Byte.SIZE).putInt(timestamp).array();
 
                             byte[] toSend = mergeRequestParts(bytes, timestampBytes);
                             DatagramPacket sendPacket = new DatagramPacket(toSend, toSend.length, broadcast, port);
@@ -85,12 +85,15 @@ public class Server implements Runnable {
                    }
                 }
 
-                long remainingTime = 5000 - (System.currentTimeMillis() - startTime);
-                if (remainingTime > 0) {
-                    Thread.sleep(remainingTime);
+                if (TIMEOUT - (System.currentTimeMillis() - startTime) > 0) {
+                    try {
+                        Thread.sleep(TIMEOUT - (System.currentTimeMillis() - startTime));
+                    } catch (InterruptedException e) {
+                        LOG.log(Level.SEVERE, "Exception while trying to wait", e);
+                    }
                 }
             }
-        } catch (InterruptedException | SocketException ex) {
+        } catch (SocketException ex) {
             LOG.log(Level.SEVERE, null, ex);
         }
     }
