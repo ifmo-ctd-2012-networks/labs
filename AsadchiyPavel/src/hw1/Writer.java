@@ -16,9 +16,10 @@ public class Writer implements Runnable {
 
     @Override
     public void run() {
+        long delimiter = (Server.isIntTime ? 1000 : 1);
         while (!Thread.interrupted()) {
-            long currentTimeMillis = System.currentTimeMillis();
-            while (!messages.isEmpty() && messages.peek().getTime().getTime() < currentTimeMillis) {
+            long currentTime = System.currentTimeMillis() / delimiter;
+            while (!messages.isEmpty() && messages.peek().getTime().getTime() / delimiter < currentTime) {
                 messagesForPrint.remove(messages.peek());
                 messagesForPrint.add(messages.peek());
                 messages.poll();
@@ -28,7 +29,7 @@ public class Writer implements Runnable {
             System.out.println("[");
             while (iterator.hasNext()) {
                 ReceivedInfo info = iterator.next();
-                if (info.getTime().getTime() < currentTimeMillis - Main.millisecondsSleepWriter) {
+                if (info.getTime().getTime() / delimiter < currentTime - Main.millisecondsSleepWriter / delimiter) {
                     info.incCounter();
                 }
                 if (info.getCounter() == Main.maxMissPackets) {

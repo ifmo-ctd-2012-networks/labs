@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 
 public class Server implements Runnable {
     private static final Logger log = Logger.getLogger(Server.class.getName());
+    public static final boolean isIntTime = true;
     private final byte[] macAddress;
 
     public Server() {
@@ -71,14 +72,14 @@ public class Server implements Runnable {
 
     private byte[] buildSendData() {
         try {
-            String hostAddress = InetAddress.getLocalHost().getHostName();
+            String hostAddress = "Pasha Asadchiy " + InetAddress.getLocalHost().getHostName();
             byte[] hostAddressBytes = hostAddress.getBytes(Charset.defaultCharset());
             byte[] hostAddressLengthBytes = new byte[1];
             hostAddressLengthBytes[0] = (byte) hostAddress.length();
-            long currentTimeMillis = System.currentTimeMillis();
-            byte[] timesTamp = longToByteArray(currentTimeMillis);
+            long currentTimeSeconds = isIntTime ? (System.currentTimeMillis() / 1000) : System.currentTimeMillis();
+            byte[] timesTamp = isIntTime ? intToByteArray(currentTimeSeconds) : longToByteArray(currentTimeSeconds);
             log.info("Data to send: " + getNormalMacAddress() + " " + hostAddress + " "
-                    + hostAddress.length() + " " + new Date(currentTimeMillis));
+                    + hostAddress.length() + " " + new Date(currentTimeSeconds * (isIntTime ? 1000 : 1)));
             return mergeByteArrays(mergeByteArrays(macAddress, hostAddressLengthBytes), mergeByteArrays(hostAddressBytes, timesTamp));
         } catch (UnknownHostException e) {
             log.severe("Can't get host, error message: " + e.getMessage());
@@ -99,6 +100,15 @@ public class Server implements Runnable {
                 (byte) (value >> 48),
                 (byte) (value >> 40),
                 (byte) (value >> 32),
+                (byte) (value >> 24),
+                (byte) (value >> 16),
+                (byte) (value >> 8),
+                (byte) value
+        };
+    }
+
+    private byte[] intToByteArray(long value) {
+        return new byte[] {
                 (byte) (value >> 24),
                 (byte) (value >> 16),
                 (byte) (value >> 8),
