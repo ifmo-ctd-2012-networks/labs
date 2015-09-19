@@ -23,12 +23,13 @@ public class Receiver implements Runnable {
                     socket.receive(packet);
 
                     Message message = parseRelative(packet.getData());
-                    System.out.println("Received message: " + message);
+                    System.out.println("Received new message: ");
+                    message.printAsTable();
                     BroadcasterInfo info = new BroadcasterInfo(message);
                     synchronized (broadcasters) {
                         synchronized (pendingMessages) {
                             if (broadcasters.putIfAbsent(info.mac, info) == null) {
-                                System.out.format("Founded new neighbour: mac: %d, hostname: \"%s\"\n",
+                                System.out.format("Founded new neighbour: mac: %s, hostname: \"%s\"\n",
                                         info.mac, info.hostname);
                             }
                             pendingMessages.put(message.mac, message);
@@ -48,19 +49,19 @@ public class Receiver implements Runnable {
         ByteBuffer buffer = ByteBuffer.wrap(data);
         byte[] mac = new byte[6];
         buffer = buffer.get(mac, 0, 6);
-        message.mac = 0L;
-        message.mac +=
-                ((long) mac[0] << 36) +
-                        ((long) mac[1] << 30) +
-                        ((long) mac[2] << 24) +
-                        ((long) mac[3] << 16) +
-                        ((long) mac[4] << 8) +
-                        ((long) mac[5]);
+        message.mac = Integer.toHexString(mac[0] & 0xFF) + "::" +
+                Integer.toHexString(mac[1] & 0xFF) + "::" +
+                Integer.toHexString(mac[2] & 0xFF) + "::" +
+                Integer.toHexString(mac[3] & 0xFF) + "::" +
+                Integer.toHexString(mac[4] & 0xFF) + "::" +
+                Integer.toHexString(mac[5] & 0xFF);
         int hostnameLength = buffer.get();
         byte[] hostname = new byte[hostnameLength];
         buffer = buffer.get(hostname, 0, hostnameLength);
         message.hostname = new String(hostname, StandardCharsets.UTF_8);
-        message.timestamp = buffer.getLong();
+        long timestamp1 = buffer.getInt();
+        long timestamp2 = buffer.getInt();
+        message.timestamp = timestamp1 + (timestamp2 << 32);
         return message;
     }
 }

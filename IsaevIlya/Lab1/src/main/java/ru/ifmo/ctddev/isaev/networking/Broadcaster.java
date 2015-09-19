@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.UUID;
 
 import static ru.ifmo.ctddev.isaev.networking.Main.*;
 
@@ -32,7 +30,8 @@ public class Broadcaster implements Runnable {
             DatagramSocket socket = new DatagramSocket();
             socket.setBroadcast(true);
             NetworkInterface network = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
-            byte[] mac = Arrays.copyOf(UUID.randomUUID().toString().getBytes(), 6);
+            byte[] mac = network.getHardwareAddress();
+            assert mac.length == 6;
             byte[] host = HOSTNAME.getBytes(StandardCharsets.UTF_8);
             ByteBuffer header = ByteBuffer.allocate(7 + host.length);
             InetAddress broadCastAddress = getBroadcastAddress(network);
@@ -43,7 +42,9 @@ public class Broadcaster implements Runnable {
                 try {
                     ByteBuffer toSend = ByteBuffer.allocate(PACKET_LENGTH);
                     toSend.put(header.array());
-                    toSend.putLong(System.currentTimeMillis());
+                    long timestamp = System.currentTimeMillis() / 1000;
+                    toSend.putInt((int) (timestamp << 32 >> 32));
+                    toSend.putInt((int) (timestamp >> 32));
                     DatagramPacket packet = new DatagramPacket(toSend.array(),
                             toSend.array().length, broadCastAddress, PORT);
                     socket.send(packet);
