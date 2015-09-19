@@ -17,6 +17,7 @@ public class Main {
             runner.start();
             Scanner sc = new Scanner(System.in);
             while (sc.hasNext()) {
+                sc.nextLine();
             }
             runner.close();
             client.close();
@@ -42,7 +43,6 @@ public class Main {
         @Override
         public void run() {
             while (!stopped) {
-                boolean changed = true;
                 List<Message> messages = server.getMessages();
                 for (Message message : messages) {
                     if (records.containsKey(getMac(message.mac))) {
@@ -50,7 +50,6 @@ public class Main {
                         r.timeStamp = Math.max(r.timeStamp, message.timeStamp);
                     } else {
                         records.put(getMac(message.mac), new Record(message.mac, message.hostName, message.timeStamp));
-                        changed = true;
                     }
                 }
                 List<Long> toRemove = new ArrayList<>();
@@ -58,34 +57,33 @@ public class Main {
                 for (long s : records.keySet()) {
                     if (records.get(s).timeStamp < time - 25) {
                         toRemove.add(s);
-                        changed = true;
                     }
                 }
                 toRemove.forEach(records::remove);
-                if (changed) {
-                    List<Record> rec = new ArrayList<>();
-                    rec.addAll(records.values());
-                    Collections.sort(rec, (o1, o2) -> {
-                        for (int i = 0; i < 6; i++) {
-                            int a = ((int) o1.mac[i] + 256) % 256;
-                            int b = ((int) o2.mac[i] + 256) % 256;
-                            if (a < b) {
-                                return -1;
-                            } else if (a > b) {
-                                return 1;
-                            }
+                List<Record> rec = new ArrayList<>();
+                rec.addAll(records.values());
+                Collections.sort(rec, (o1, o2) -> {
+                    for (int i = 0; i < 6; i++) {
+                        int a = ((int) o1.mac[i] + 256) % 256;
+                        int b = ((int) o2.mac[i] + 256) % 256;
+                        if (a < b) {
+                            return -1;
+                        } else if (a > b) {
+                            return 1;
                         }
-                        return 0;
-                    });
-                    System.out.println("Time: " + System.currentTimeMillis() / 1000l);
-                    rec.forEach(System.out::println);
-                    System.out.println("--------------------------------------");
-                }
+                    }
+                    return 0;
+                });
+                System.out.println("Time: " + System.currentTimeMillis() / 1000l);
+                rec.forEach(System.out::println);
+                System.out.println("--------------------------------------");
                 time = System.currentTimeMillis();
                 while (!stopped && System.currentTimeMillis() < time + 5000) {
                     try {
                         Thread.sleep(time + 5000 - System.currentTimeMillis());
                     } catch (InterruptedException e) {
+                        if (stopped)
+                            return;
                     }
                 }
             }

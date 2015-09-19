@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 
 public class Message {
+    public static boolean TSL = false;
     public final byte[] mac;
     public final String hostName;
     public long timeStamp;
@@ -21,23 +22,27 @@ public class Message {
         byte[] hostNameBytes = new byte[len];
         System.arraycopy(message, 7, hostNameBytes, 0, len);
         hostName = new String(hostNameBytes, "UTF-8");
-        byte[] timeStampBytes = new byte[Long.BYTES];
-        System.arraycopy(message, message[6] + 7, timeStampBytes, 0, Long.BYTES);
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        byte[] timeStampBytes = new byte[TSL ? 8 : 4];
+        System.arraycopy(message, message[6] + 7, timeStampBytes, 0, TSL ? 8 : 4);
+        ByteBuffer buffer = ByteBuffer.allocate(TSL ? 8 : 4);
         buffer.put(timeStampBytes);
         buffer.flip();
-        timeStamp = buffer.getLong();
+        timeStamp = TSL ? buffer.getLong() : buffer.getInt();
     }
 
     public byte[] getBytes() throws UnsupportedEncodingException {
         byte[] hostNameBytes = hostName.getBytes("UTF-8");
-        byte[] message = new byte[hostNameBytes.length + Long.BYTES + 7];
+        byte[] message = new byte[hostNameBytes.length + (TSL ? 15 : 11)];
         System.arraycopy(mac, 0, message, 0, 6);
         message[6] = (byte) hostNameBytes.length;
         System.arraycopy(hostNameBytes, 0, message, 7, hostNameBytes.length);
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        buffer.putLong(timeStamp);
-        System.arraycopy(buffer.array(), 0, message, message.length - Long.BYTES, Long.BYTES);
+        ByteBuffer buffer = ByteBuffer.allocate(TSL ? 8 : 4);
+        if (TSL)
+            buffer.putLong(timeStamp);
+        else
+            buffer.putInt((int) timeStamp);
+        int l = TSL ? 8 : 4;
+        System.arraycopy(buffer.array(), 0, message, message.length - l, l);
         return message;
     }
 }

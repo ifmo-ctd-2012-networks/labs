@@ -3,6 +3,10 @@ package ru.ifmo.loboda.net;
 public class Main {
     public static void main(String[] args) throws BadPacketException {
         try {
+            if (args.length == 0) {
+                System.err.println("Usage: Main <port>");
+                System.exit(1);
+            }
             int port = Integer.parseInt(args[0]);
             Thread broadcaster = new Thread(new Broadcaster(port));
             DB db = new DB();
