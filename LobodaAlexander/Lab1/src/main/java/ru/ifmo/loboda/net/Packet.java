@@ -38,11 +38,20 @@ public class Packet {
         }
         mac = Arrays.copyOfRange(bytes, 0, 6);
         lenght = bytes[6];
-        if(bytes.length != 11 + lenght){
-            throw new BadPacketException("Packet has wrong size");
-        }
         name = Arrays.copyOfRange(bytes, 7, 7 + lenght);
         ts = Arrays.copyOfRange(bytes, bytes.length - 4, bytes.length);
+    }
+
+    public static String MACAsString(byte[] mac) {
+        String res = "";
+        for (int i = 0; i < mac.length; i++) {
+            res += hexArray[(mac[i] & 0xFF) / 16];
+            res += hexArray[(mac[i] & 0xFF) % 16];
+            if (i != mac.length - 1) {
+                res += "::";
+            }
+        }
+        return res;
     }
 
     public byte[] getBytes(){
@@ -67,17 +76,5 @@ public class Packet {
 
     public byte[] getMAC(){
         return Arrays.copyOfRange(mac, 0, 6);
-    }
-
-    public static String MACAsString(byte[] mac){
-        String res = "";
-        for(int i = 0; i < mac.length; i++){
-            res += hexArray[(mac[i] & 0xFF) / 16];
-            res += hexArray[(mac[i] & 0xFF) % 16];
-            if(i != mac.length - 1){
-                res += "::";
-            }
-        }
-        return res;
     }
 }
