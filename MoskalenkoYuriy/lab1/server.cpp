@@ -12,9 +12,16 @@ long long now_time()
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
+typedef unsigned char ubyte;
+
 std::string merge(const std::string &mac_addres, const std::string &host_name, long long time)
 {
-    return mac_addres + (char)host_name.size() + host_name  + std::to_string(time);
+    char *t = (char*)(&time);
+    std::string time_b (t, t + 8);
+
+    std::reverse(time_b.begin(), time_b.end());
+
+    return mac_addres + (char)host_name.size() + host_name  + time_b;
 }
 
 std::string get_mac_addres()
