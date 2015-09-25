@@ -1,6 +1,6 @@
 import java.net.DatagramPacket;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Date;
 
 /**
  * @author korektur
@@ -10,7 +10,7 @@ public class Packet {
 
     public final String macAddress;
     public final String hostName;
-    public final long timeStamp;
+    public final int timeStamp;
 
     public Packet(DatagramPacket packet) {
         byte[] response = packet.getData();
@@ -24,12 +24,11 @@ public class Packet {
 
         hostName = new String(Arrays.copyOfRange(response, 7, 7 + hostNameLength));
 
-        long timeStamp = 0;
-        for (int i = 7 + hostNameLength + 1; i < packet.getLength(); i++)
-        {
-            timeStamp = (timeStamp << 8) + (response[i] & 0xff);
-        }
-        this.timeStamp = timeStamp;
+        byte[] timestampBytes = new byte[4];
+        System.arraycopy(response, 7 + hostNameLength, timestampBytes, 0, 4);
+
+        ByteBuffer buffer = ByteBuffer.wrap(timestampBytes);
+        timeStamp = buffer.getInt();
     }
 
     @Override
@@ -37,7 +36,7 @@ public class Packet {
         return "Packet{" +
                 "macAddress='" + macAddress + '\'' +
                 ", hostName='" + hostName + '\'' +
-                ", timeStamp=" + new Date(timeStamp) +
+                ", timeStamp=" + timeStamp +
                 '}';
     }
 }

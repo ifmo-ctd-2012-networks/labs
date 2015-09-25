@@ -1,4 +1,4 @@
-import java.util.HashMap;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.TreeMap;
@@ -41,11 +41,14 @@ public class Printer implements Runnable {
                 }
             }
 
-            nodes.values().stream().forEach(node -> {if (!updated.contains(node.macAddress)) ++node.lostPackets;});
+            nodes.values().stream().forEach(node -> {
+                if (!updated.contains(node.macAddress)) ++node.lostPackets;
+            });
 
             nodes = nodes.entrySet().stream().filter(e -> e.getValue().lostPackets < 5)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, TreeMap::new));
 
+            System.out.println(new Date());
             nodes.values().forEach(System.out::println);
 
             while (System.currentTimeMillis() - startTime < TIME_TO_SLEEP) {

@@ -17,8 +17,9 @@ public class Writer implements Runnable {
     @Override
     public void run() {
         while (!Thread.interrupted()) {
-            long currentTimeMillis = System.currentTimeMillis();
-            while (!messages.isEmpty() && messages.peek().getTime().getTime() < currentTimeMillis) {
+            long currentTime = System.currentTimeMillis() / 1000;
+            while (!messages.isEmpty() && (messages.peek().getTime() == null
+                    || messages.peek().getTime().getTime() / 1000 < currentTime)) {
                 messagesForPrint.remove(messages.peek());
                 messagesForPrint.add(messages.peek());
                 messages.poll();
@@ -28,7 +29,8 @@ public class Writer implements Runnable {
             System.out.println("[");
             while (iterator.hasNext()) {
                 ReceivedInfo info = iterator.next();
-                if (info.getTime().getTime() < currentTimeMillis - Main.millisecondsSleepWriter) {
+                if (info.getTime().getTime() / 1000 < currentTime - Main.millisecondsSleepWriter / 1000 ||
+                        info.isIncorrectData()) {
                     info.incCounter();
                 }
                 if (info.getCounter() == Main.maxMissPackets) {
