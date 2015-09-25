@@ -14,6 +14,7 @@ public class Message {
     String mac;
     String hostname;
     long timestamp;
+    boolean ok;
 
     public void printAsTable() {
         Object[][] data = {

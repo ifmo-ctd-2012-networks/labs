@@ -1,5 +1,8 @@
 package ru.ifmo.ctddev.isaev.networking;
 
+import ru.ifmo.ctddev.isaev.networking.broadcaster.MadBroadcaster;
+import ru.ifmo.ctddev.isaev.networking.broadcaster.NormalBroadcaster;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -13,7 +16,7 @@ public class Main {
 
     public static final Map<String, BroadcasterInfo> broadcasters = new TreeMap<>(String::compareTo);
     public static final Map<String, Message> pendingMessages = new HashMap<>();
-    private static final Executor executor = Executors.newFixedThreadPool(3);
+    private static final Executor executor = Executors.newFixedThreadPool(10);
     public static int PACKET_LENGTH;
     public static int SLEEP_TIME = 5000;
     public static int PORT = 4445;
@@ -31,10 +34,12 @@ public class Main {
         if (args.length > 2) {
             SLEEP_TIME = Integer.parseInt(args[2]);
         }
-
         HOSTNAME = args[0];
         PACKET_LENGTH = 6 + HOSTNAME.getBytes().length + 1 + 8;
-        executor.execute(new Broadcaster());
+        if (args.length > 3 && args[3].equals("MAD")) {
+            executor.execute(new MadBroadcaster());
+        }
+        executor.execute(new NormalBroadcaster());
         executor.execute(new Receiver());
         executor.execute(new Printer());
     }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
 import static ru.ifmo.ctddev.isaev.networking.Main.*;
@@ -21,9 +22,12 @@ public class Receiver implements Runnable {
                 try {
                     DatagramPacket packet = new DatagramPacket(new byte[PACKET_LENGTH], PACKET_LENGTH);
                     socket.receive(packet);
-
-                    Message message = parseRelative(packet.getData());
                     System.out.println("Received new message: ");
+                    Message message = parseRelative(packet.getData());
+                    if (!message.ok) {
+                        System.out.println("Received bad packet");
+                        continue;
+                    }
                     message.printAsTable();
                     BroadcasterInfo info = new BroadcasterInfo(message);
                     synchronized (broadcasters) {
@@ -36,10 +40,10 @@ public class Receiver implements Runnable {
                         }
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    System.out.println("Received bad packet");
                 }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -47,21 +51,43 @@ public class Receiver implements Runnable {
     private Message parseRelative(byte[] data) {
         Message message = new Message();
         ByteBuffer buffer = ByteBuffer.wrap(data);
+        buffer.order(ByteOrder.BIG_ENDIAN);
         byte[] mac = new byte[6];
-        buffer = buffer.get(mac, 0, 6);
+        buffer.position(0);
+        if (buffer.remaining() < 6) {
+            message.ok = false;
+            return message;
+        }
+        buffer = buffer.get(mac);
         message.mac = Integer.toHexString(mac[0] & 0xFF) + "::" +
                 Integer.toHexString(mac[1] & 0xFF) + "::" +
                 Integer.toHexString(mac[2] & 0xFF) + "::" +
                 Integer.toHexString(mac[3] & 0xFF) + "::" +
                 Integer.toHexString(mac[4] & 0xFF) + "::" +
                 Integer.toHexString(mac[5] & 0xFF);
+        if (buffer.remaining() < 1) {
+            message.ok = false;
+            return message;
+        }
         int hostnameLength = buffer.get();
+        if (hostnameLength < 0) {
+            message.ok = false;
+            return message;
+        }
         byte[] hostname = new byte[hostnameLength];
-        buffer = buffer.get(hostname, 0, hostnameLength);
+        if (buffer.remaining() < hostnameLength) {
+            message.ok = false;
+            return message;
+        }
+        buffer = buffer.get(hostname);
         message.hostname = new String(hostname, StandardCharsets.UTF_8);
-        long timestamp1 = buffer.getInt();
-        long timestamp2 = buffer.getInt();
-        message.timestamp = timestamp1 + (timestamp2 << 32);
+        System.out.println("Hostname is: " + message.hostname);
+        if (buffer.remaining() < 8) {
+            message.ok = false;
+            return message;
+        }
+        message.timestamp = buffer.getLong();
+        message.ok = true;
         return message;
     }
 }
