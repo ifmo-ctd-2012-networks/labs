@@ -29,7 +29,8 @@ public class Writer implements Runnable {
             System.out.println("[");
             while (iterator.hasNext()) {
                 ReceivedInfo info = iterator.next();
-                if (info.getTime().getTime() / 1000 < currentTime - Main.millisecondsSleepWriter / 1000) {
+                if (info.getTime().getTime() / 1000 < currentTime - Main.millisecondsSleepWriter / 1000 ||
+                        info.isIncorrectData()) {
                     info.incCounter();
                 }
                 if (info.getCounter() == Main.maxMissPackets) {
