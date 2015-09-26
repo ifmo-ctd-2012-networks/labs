@@ -20,7 +20,7 @@ public class Client implements Runnable {
     public void init() throws SocketException, UnknownHostException {
         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         InetAddress ip = null;
-        ipAddr: while (interfaces.hasMoreElements()) {
+        getIP: while (interfaces.hasMoreElements()) {
             NetworkInterface element = interfaces.nextElement();
             if (element.isLoopback() || !element.isUp()) {
                 continue;
@@ -30,11 +30,9 @@ public class Client implements Runnable {
             while (addresses.hasMoreElements()) {
                 InetAddress i = addresses.nextElement();
                 if (i instanceof Inet4Address) {
-                    //if (!InetAddress.getLocalHost().toString().contains(i.toString())) {
-                        ip = i;
-                        System.out.println("Current IP address : " + ip.getHostAddress());
-                        break ipAddr;
-                    //}
+                    ip = i;
+                    System.out.println("Current IP address : " + ip.getHostAddress());
+                    break getIP;
                 }
             }
         }

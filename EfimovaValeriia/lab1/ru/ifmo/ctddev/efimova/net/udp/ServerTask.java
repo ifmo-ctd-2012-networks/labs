@@ -38,7 +38,16 @@ public class ServerTask extends TimerTask {
                 e.printStackTrace();
             }
             if (msg != null) {
-                hostByMac.put(msg.mac, new HostLost(msg, 0));
+                HostLost hl = hostByMac.get(msg.mac);
+                if (hl == null) {
+                    hl = new HostLost(msg, 0);
+                } else {
+                    if (hl.lost > 0) {
+                        hl.lost--;
+                    }
+                    hl.msg = msg;
+                }
+                hostByMac.put(msg.mac, hl);
             }
         }
 
@@ -47,10 +56,7 @@ public class ServerTask extends TimerTask {
             Map.Entry<String, HostLost> entry = it.next();
             HostLost hl = entry.getValue();
 
-            int curTime = (int) (System.currentTimeMillis() / 1000);
-            if ((curTime - hl.msg.timestamp) > 5) {
-                hl.lost++;
-            }
+            hl.lost++;
 
             if (hl.lost == 5) {
                 it.remove();
