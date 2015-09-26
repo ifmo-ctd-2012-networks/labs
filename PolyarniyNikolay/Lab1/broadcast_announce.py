@@ -10,6 +10,7 @@ DEFAULT_PORT = 2391
 DEFAULT_BYTE_ORDER = 'big'
 HOSTNAME_LIMIT_BYTE_SIZE = 255
 HOSTNAME_ENCODING = 'utf-8'
+HOSTNAME_PRINT_LIMIT = 30
 DELAY_SECONDS = 5
 MISSED_PACKETS_LIMIT = 5
 TIMESTAMP_BYTES = 4
@@ -90,8 +91,14 @@ def message_handler(queue, byteorder=DEFAULT_BYTE_ORDER, loop=None):
                 missed_packets[mac], last_packet[mac] = 0, packet
         messages_by_mac.clear()
 
+        def limit_string(string, limit):
+            if len(string) > limit:
+                return string[:limit-3] + '...'
+            else:
+                return string
+
         def to_table(macs):
-            return tabulate([[m, last_packet[m][2], last_packet[m][3], missed_packets[m]]
+            return tabulate([[m, limit_string(last_packet[m][2], HOSTNAME_PRINT_LIMIT), last_packet[m][3], missed_packets[m]]
                              for m in sorted(macs)],
                             headers=['Mac', 'Hostname', 'Last packet timestamp', 'Missed packets'], tablefmt='grid')
         if len(macs_to_delete) > 0:
@@ -111,8 +118,11 @@ def message_handler(queue, byteorder=DEFAULT_BYTE_ORDER, loop=None):
         data = yield from queue.get()
 
         length = len(data)
-        if length < 7 or length != 6 + 1 + data[6] + TIMESTAMP_BYTES:
-            logger.warn('Broken message!')
+        if length < 7:
+            logger.warn('Broken message! Too short - less than 7.')
+            continue
+        if length != 6 + 1 + data[6] + TIMESTAMP_BYTES:
+            logger.warn('Broken message! Expected len={}, found={}.'.format(6 + 1 + data[6] + TIMESTAMP_BYTES, length))
             continue
 
         sender_mac, data = format_mac(int.from_bytes(data[:6], byteorder)), data[6:]
@@ -120,7 +130,7 @@ def message_handler(queue, byteorder=DEFAULT_BYTE_ORDER, loop=None):
         try:
             hostname, data = str(data[:hostname_bytes_len], encoding=HOSTNAME_ENCODING), data[hostname_bytes_len:]
         except UnicodeDecodeError:
-            logger.warn('Broken message!')
+            logger.warn('Broken message! Unicode decode error.')
             continue
         timestamp = int.from_bytes(data[:TIMESTAMP_BYTES], byteorder)
 
