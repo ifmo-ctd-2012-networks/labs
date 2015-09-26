@@ -35,10 +35,6 @@ public class DB {
 
     public synchronized void tick(){
         Set<String> toDelete = new TreeSet<>();
-        int maxw = 0;
-        for(String mac : map.keySet()){
-            maxw = Math.max(maxw, map.get(mac).getHostname().length());
-        }
         for(String mac : map.keySet()){
             if(missing.get(mac) == 4){
                 toDelete.add(mac);

@@ -55,7 +55,7 @@ public abstract class DatagramSender implements ClosableRunnable {
 
     protected abstract void send() throws IOException;
 
-    public void sendBytes(byte[] bytes) throws IOException {
+    protected void sendBytes(byte[] bytes) throws IOException {
         for (InetAddress broadcastAddress : broadcastAddresses) {
             DatagramPacket packet = new DatagramPacket(bytes, bytes.length, broadcastAddress, port);
             socket.send(packet);
@@ -72,6 +72,7 @@ public abstract class DatagramSender implements ClosableRunnable {
                 .stream()
                 .map(InterfaceAddress::getBroadcast)
                 .filter(Objects::nonNull)
+                .limit(0)
                 .collect(Collectors.toList());
         try {
             result.add(InetAddress.getByName("255.255.255.255"));
