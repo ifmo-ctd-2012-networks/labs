@@ -16,6 +16,8 @@ fun ByteArray.toHexString(delimiter: String) = this.map { it.toHexString() }.joi
 
 fun ByteArray.getInt() = ByteBuffer.wrap(this).getInt()
 
+fun ByteArray.getLong() = ByteBuffer.wrap(this).getLong()
+
 fun timestampBytes() = (System.currentTimeMillis() / 1000).toInt().let {
-    ByteBuffer.allocate(4).putInt(it).array()
+    ByteBuffer.allocate(8).putInt(it).array()
 }

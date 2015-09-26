@@ -38,7 +38,7 @@ public class Packet {
         }
         mac = Arrays.copyOfRange(bytes, 0, 6);
         lenght = bytes[6];
-        name = Arrays.copyOfRange(bytes, 7, 7 + lenght);
+        name = Arrays.copyOfRange(bytes, 7, 7 + (lenght & 0xFF));
         ts = Arrays.copyOfRange(bytes, bytes.length - 4, bytes.length);
     }
 

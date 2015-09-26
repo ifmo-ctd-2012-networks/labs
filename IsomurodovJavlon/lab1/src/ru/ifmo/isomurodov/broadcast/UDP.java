@@ -28,11 +28,8 @@ public class UDP {
     public UDP(byte[] bytes) {
         macAdress = Arrays.copyOfRange(bytes, 0, 6);
         hostnameLength = bytes[6];
-        if (bytes.length < (int) hostnameLength + 11) {
-            throw new IllegalArgumentException("baad:" + bytes.length + " " + (int) hostnameLength);
-        }
-        hostname = Arrays.copyOfRange(bytes, 7, 7 + (int) hostnameLength);
-        timeStamp = Arrays.copyOfRange(bytes, 7 + (int) hostnameLength, bytes.length);
+        hostname = Arrays.copyOfRange(bytes, 7, 7 + (hostnameLength & 0xFF));
+        timeStamp = Arrays.copyOfRange(bytes, 7 + (hostnameLength & 0xFF), bytes.length);
     }
 
     public byte[] getBytes() {

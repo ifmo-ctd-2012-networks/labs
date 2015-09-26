@@ -26,7 +26,10 @@ public class MacAddress implements Comparable<MacAddress> {
     public int compareTo(MacAddress other) {
         byte[] otherValue = other.value;
         for (int i = 0; i < value.length; i++) {
-            if (value[i] != otherValue[i]) return Byte.compare(value[i], otherValue[i]);
+            if (value[i] != otherValue[i]) {
+                // compare unsigned
+                return Integer.compare(value[i] ^ 0xFFFFFF80, otherValue[i] ^ 0xFFFFFF80);
+            }
         }
         return 0;
     }

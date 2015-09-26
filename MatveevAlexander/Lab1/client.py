@@ -11,7 +11,8 @@ from concurrent.futures import ThreadPoolExecutor
 class Listener:
 
     BUF_SIZE = 4096
-    PORT = 3439
+    PORT = 1234
+    BYTEORDER = 'big'
 
     def __init__(self):
         self.pool = ThreadPoolExecutor(max_workers=1)
@@ -36,33 +37,51 @@ class Listener:
                 self.pool.submit(print, (buf, address))
             except KeyboardInterrupt:
                 traceback.print_exc()
-                self.queue.join()
                 self.socket.close()
                 sys.exit(0)
 
     def handle(self):
+        def get_data(buf):
+            mac = int.from_bytes(buf[:6], Listener.BYTEORDER)
+            buf = buf[6:]
+            hostname_len = int.from_bytes(buf[:1], Listener.BYTEORDER)
+            buf = buf[1:]
+            hostname = str(buf[:hostname_len], encoding='utf8')
+            buf = buf[hostname_len:]
+            timestamp = int.from_bytes(buf, Listener.BYTEORDER)
+
+            return mac, hostname_len, hostname, timestamp
+
         instances = {}
         counts = {}
 
         while True:
-            while not self.queue.empty():
-                try:
-                    buf, _ = self.queue.get()
-                    items = buf.split(','.encode('utf8'))
-                    instances[items[0]] = (items[1], items[2], items[3])
-                    counts[items[0]] = 5
-                finally:
-                    self.queue.task_done()
+            try:
+                while not self.queue.empty():
+                    try:
+                        buf, _ = self.queue.get()
+                        mac, hostname_len, hostname, timestamp = get_data(buf)
+                        instances[mac] = (hostname_len, hostname, timestamp)
+                        counts[mac] = -1
+                    finally:
+                        self.queue.task_done()
 
-            for key in instances.keys():
-                counts[key] -= 1
-                if counts[key] == 0:
-                    del instances[key]
-                    del counts[key]
+                instances_tmp = {}
+                counts_tmp = {}
+                for key in instances.keys():
+                    counts[key] += 1
+                    if counts[key] < 5:
+                        instances_tmp[key] = instances[key]
+                        counts_tmp[key] = counts[key]
 
-            # print('Instances: {0}'.format(instances))
-            # print('Counts: {0}'.format(counts))
-            time.sleep(5)
+                instances = instances_tmp
+                counts = counts_tmp
+                for instance in instances:
+                    self.pool.submit(print, 'Host: {0} Lost: {1}'.format(instances[instance], counts[instance]))
+
+                time.sleep(5)
+            except KeyboardInterrupt:
+                break
 
 if __name__ == '__main__':
     Listener()
