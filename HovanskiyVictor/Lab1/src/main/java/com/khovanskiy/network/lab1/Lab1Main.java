@@ -5,15 +5,26 @@ import com.khovanskiy.network.lab1.model.MacAddress;
 import com.khovanskiy.network.lab1.model.Message;
 import javafx.util.Pair;
 
-import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Полезная статья http://xgu.ru/wiki/%D0%A1%D0%B5%D1%82%D0%B5%D0%B2%D0%BE%D0%B9_%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D1%84%D0%B5%D0%B9%D1%81
+ * ???????? ?????? http://xgu.ru/wiki/%D0%A1%D0%B5%D1%82%D0%B5%D0%B2%D0%BE%D0%B9_%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D1%84%D0%B5%D0%B9%D1%81
  *
  * @author victor
  */
@@ -64,15 +75,23 @@ public class Lab1Main implements Runnable {
         service.submit(sender);
 
         while (!Thread.interrupted()) {
-            try {
-                Pair<byte[], InetAddress> pair = getBroadcast();
+            /*for (Pair<byte[], InetAddress> pair : getBroadcast()) {
+                for (byte[] mac : getRandomMacs(10)) {
+                    MacAddress macAddress = new MacAddress(mac);
+                    InetAddress address = pair.getValue();
+                    long timestamp = getUnixTimestamp();
+                    Message message = new Message(macAddress, UUID.randomUUID().toString().substring(0, 9), timestamp);
+                    InetSocketAddress inetSocketAddress = new InetSocketAddress(address, port);
+                    sender.send(inetSocketAddress, message);
+                }
+            }*/
+            for (Pair<byte[], InetAddress> pair : getBroadcast()) {
                 MacAddress macAddress = new MacAddress(pair.getKey());
                 InetAddress address = pair.getValue();
                 long timestamp = getUnixTimestamp();
                 Message message = new Message(macAddress, hostname, timestamp);
                 InetSocketAddress inetSocketAddress = new InetSocketAddress(address, port);
                 sender.send(inetSocketAddress, message);
-            } catch (IOException ignored) {
             }
             synchronized (instanceMap) {
                 StringBuilder sb = new StringBuilder();
@@ -101,20 +120,39 @@ public class Lab1Main implements Runnable {
         }
     }
 
-    private Pair<byte[], InetAddress> getBroadcast() throws SocketException {
-        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-        while (interfaces.hasMoreElements()) {
-            NetworkInterface networkInterface = interfaces.nextElement();
-            if (networkInterface.getHardwareAddress() != null) {
-                for (InterfaceAddress interfaceAddess : networkInterface.getInterfaceAddresses()) {
-                    InetAddress address = interfaceAddess.getBroadcast();
-                    if (address != null) {
-                        return new Pair<>(networkInterface.getHardwareAddress(), address);
+    private final Random random = new Random();
+
+    private List<byte[]> getRandomMacs(int count) {
+        List<byte[]> macs = new LinkedList<>();
+        for (int i = 0; i < count; ++i) {
+            byte[] mac = new byte[6];
+            for (int  j = 0; j < mac.length; ++j) {
+                mac[j] = (byte)(random.nextInt(256) - 127);
+            }
+            macs.add(mac);
+        }
+        return macs;
+    }
+
+    private List<Pair<byte[], InetAddress>> getBroadcast() {
+        List<Pair<byte[], InetAddress>> list = new ArrayList<>();
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = interfaces.nextElement();
+                if (networkInterface.getHardwareAddress() != null) {
+                    for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
+                        InetAddress address = interfaceAddress.getBroadcast();
+                        if (address != null) {
+                            list.add(new Pair<>(networkInterface.getHardwareAddress(), address));
+                        }
                     }
                 }
             }
+            return list;
+        } catch (SocketException e) {
+            return Collections.emptyList();
         }
-        throw new SocketException("No broadcast address found");
     }
 
     public long getUnixTimestamp() {

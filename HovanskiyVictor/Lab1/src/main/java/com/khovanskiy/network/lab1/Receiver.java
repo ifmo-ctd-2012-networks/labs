@@ -28,11 +28,15 @@ public class Receiver implements Runnable {
         try {
             DatagramSocket socket = new DatagramSocket(port);
             while (!Thread.interrupted()) {
-                DatagramPacket packet = new DatagramPacket(new byte[PACKET_LENGTH], PACKET_LENGTH);
-                socket.receive(packet);
-                Message message = new Message(packet.getData());
-                if (listener != null) {
-                    listener.onSuccess(message);
+                try {
+                    DatagramPacket packet = new DatagramPacket(new byte[PACKET_LENGTH], PACKET_LENGTH);
+                    socket.receive(packet);
+                    Message message = new Message(packet.getData());
+                    if (listener != null) {
+                        listener.onSuccess(message);
+                    }
+                } catch (Exception ignored) {
+
                 }
             }
         } catch (IOException e) {
