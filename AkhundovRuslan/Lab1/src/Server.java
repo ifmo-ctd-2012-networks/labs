@@ -15,7 +15,7 @@ public class Server implements Runnable {
     private static final Charset CHARSET = StandardCharsets.UTF_8;
     private static final int TIMEOUT = 5000;
     private final int port;
-    private final byte[] bytes;
+    private final byte[] hostnameBytes;
 
     public Server(int clientPort) throws SocketException, UnknownHostException {
         this.port = clientPort;
@@ -23,21 +23,9 @@ public class Server implements Runnable {
 
         System.out.println("Current ip address : " + ip.getHostAddress());
 
-        NetworkInterface network = NetworkInterface.getByInetAddress(ip);
-        byte[] macAddress = network.getHardwareAddress();
-
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < macAddress.length; i++) {
-            sb.append(String.format("%02X%s", macAddress[i], (i < macAddress.length - 1) ? "-" : ""));
-        }
-
-        System.out.println(sb.toString());
-
         String hostname = InetAddress.getLocalHost().getHostName();
 
-        byte[] hostnameBytes = hostname.getBytes(CHARSET);
-        byte[] len = {(byte)hostnameBytes.length};
-        bytes = mergeRequestParts(macAddress, mergeRequestParts(len, hostnameBytes));
+        hostnameBytes = hostname.getBytes(CHARSET);
     }
 
     private static byte[] mergeRequestParts(byte[] fst, byte[] snd) {
@@ -61,6 +49,10 @@ public class Server implements Runnable {
                 while (interfaces.hasMoreElements()) {
                     NetworkInterface networkInterface = (NetworkInterface) interfaces.nextElement();
 
+                    byte[] macAddress = networkInterface.getHardwareAddress();
+                    if (macAddress == null) continue;
+                    byte[] len = {(byte)hostnameBytes.length};
+                    byte[] bytes = mergeRequestParts(macAddress, mergeRequestParts(len, hostnameBytes));
                     if (networkInterface.isLoopback() || !networkInterface.isUp()) {
                         continue;
                     }

@@ -36,6 +36,7 @@ public class Printer implements Runnable {
                 Node node = nodes.get(packet.macAddress);
                 if (node != null) {
                     node.lostPackets = 0;
+                    node.hostname = packet.hostName;
                 } else {
                     nodes.put(packet.macAddress, new Node(packet));
                 }

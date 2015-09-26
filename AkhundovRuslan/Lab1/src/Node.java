@@ -5,7 +5,7 @@
 public class Node {
 
     public int lostPackets;
-    public final String hostname;
+    public String hostname;
     public final String macAddress;
 
     public Node(Packet packet) {
