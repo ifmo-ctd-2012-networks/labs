@@ -32,7 +32,7 @@ public class Receiving implements Runnable {
                     socket.receive(packet);
                     byte[] bytes = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
                     if(bytes.length >= 11) {
-                        if(bytes.length == (int) bytes[6] + 11) {
+                        if(bytes.length ==  (bytes[6] & 0xFF) + 11) {
                             UDP message = new UDP(bytes);
                             db.add(message);
                         }

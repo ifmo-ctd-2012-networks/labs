@@ -1,4 +1,3 @@
-package lab1;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -10,7 +9,6 @@ import java.util.List;
 public class Server extends Thread {
     private final DatagramSocket socket;
     private List<Message> messages = new ArrayList<>();
-    private volatile boolean stopped;
 
     public Server(int port) throws SocketException {
         socket = new DatagramSocket(port);
@@ -18,30 +16,33 @@ public class Server extends Thread {
 
     @Override
     public void run() {
-        while (!stopped) {
-            DatagramPacket packet = new DatagramPacket(new byte[Long.BYTES + 263], Long.BYTES + 263);
+        while (true) {
+            DatagramPacket packet = new DatagramPacket(new byte[1024], 1024);
             try {
                 socket.receive(packet);
-                synchronized (this) {
-		    try {
-                        messages.add(new Message(packet.getData()));
-		    catch (Exception e) {}
+                synchronized (messages) {
+                    messages.add(new Message(packet.getData()));
                 }
             } catch (IOException e) {
-                if (!stopped)
-                    System.err.println("Error while receiving message: " + e.getMessage());
+                System.err.println("Error while receiving message: " + e.getMessage());
+            } catch (ParseException e) {
+                System.out.println(e.getMessage());
+                e.printStackTrace();
             }
+
         }
     }
 
-    public synchronized List<Message> getMessages() {
-        List<Message> result = messages;
-        messages = new ArrayList<>();
-        return result;
+    public List<Message> getMessages() {
+        synchronized (messages) {
+            List<Message> result = messages;
+            messages = new ArrayList<>();
+            return result;
+        }
     }
 
     public void close() {
-        stopped = true;
         socket.close();
+        interrupt();
     }
 }

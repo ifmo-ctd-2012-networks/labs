@@ -13,19 +13,21 @@ public data class InstanceEntry(val macAddress: String,
                                 val hostName: String)
 
 public class Instance(public val iface: NetworkInterface,
-                      public val onNeighboursUpdated: (List<InstanceEntry>) -> Unit = { }) {
+                      public val port: Int,
+                      public val onNeighboursUpdated: (List<Instance.NeighbourEntry>) -> Unit = { }) {
 
-    private val socket = broadcastSocketOnInterface(iface)
+    private val socket = broadcastSocketOnInterface(iface, port)
     private val macAddr = iface.hardwareAddress
     private val hostNameBytes = iface.inetAddresses.asSequence().first().hostName.toByteArray(charset = CHARSET)
     private val hostNameLength = byteArrayOf(hostNameBytes.size().toByte())
 
     private val broadcastAddr = InetSocketAddress(BROADCAST_ADDRESS, DEFAULT_PORT)
 
-    private data class NeighbourEntry(
+    public data class NeighbourEntry(
             val instanceEntry: InstanceEntry,
             @Volatile var ticksMissed: Int = 0,
-            @Volatile var missedThisTick: Boolean = false)
+            @Volatile var missedThisTick: Boolean = false,
+            @Volatile var timestamp: Int = 0)
 
     private val neighbours = TreeMap<String, NeighbourEntry>()
 
@@ -41,20 +43,24 @@ public class Instance(public val iface: NetworkInterface,
                 val bytes = ByteArray(PACKET_SIZE)
                 val packet = DatagramPacket(bytes, 0, PACKET_SIZE)
                 socket.receive(packet)
-                val input = bytes.inputStream()
 
+                val input = bytes.inputStream(0, packet.length)
                 fun getBytes(n: Int) = ByteArray(n).apply { input.read(this) }
 
                 val macAddr = getBytes(6).toHexString("-")
-                val hostNameLength = getBytes(1)[0].toInt()
+                var hostNameLength = getBytes(1)[0].toInt()
+                if (hostNameLength < 0)
+                    hostNameLength += 128;
+
                 val hostName = getBytes(hostNameLength).toString(CHARSET)
-                val timestamp = getBytes(4).getInt()
+                val time = getBytes(4).getInt()
 
                 neighbours.getOrPut(macAddr) {
-                    NeighbourEntry(InstanceEntry(macAddr, hostName))
+                    NeighbourEntry(InstanceEntry(macAddr, hostName), 0, false, 0)
                 }.apply {
                     missedThisTick = false
                     ticksMissed = 0
+                    timestamp = time
                 }
             }
         } catch (e: SocketException) {
@@ -71,7 +77,7 @@ public class Instance(public val iface: NetworkInterface,
         output write timestampBytes()
 
         val bytes = output.toByteArray()
-        val packet = DatagramPacket(bytes, 0, bytes.size(), broadcastAddr)
+        val packet = DatagramPacket(bytes, 0, output.size(), broadcastAddr)
 
         socket send packet
     }
@@ -87,7 +93,7 @@ public class Instance(public val iface: NetworkInterface,
             n.missedThisTick = true
         }
         macsToRemove.forEach { neighbours remove it }
-        onNeighboursUpdated(neighbours.values().map { it.instanceEntry })
+        onNeighboursUpdated(neighbours.values().toList())
     }
 
     private fun onTicks(applyAction: () -> Unit) {
@@ -104,8 +110,8 @@ fun defaultInterface(): NetworkInterface {
     return result
 }
 
-fun broadcastSocketOnInterface(iface: NetworkInterface): DatagramSocket {
-    val addr = InetSocketAddress(iface.inetAddresses.asSequence().first(), DEFAULT_PORT)
+fun broadcastSocketOnInterface(iface: NetworkInterface, port: Int = DEFAULT_PORT): DatagramSocket {
+    val addr = InetSocketAddress(iface.inetAddresses.asSequence().first(), port)
     val result = DatagramSocket(addr) apply { broadcast = true }
     return result
 }
