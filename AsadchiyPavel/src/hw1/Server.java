@@ -5,16 +5,11 @@ import java.net.*;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.logging.Logger;
 
 public class Server implements Runnable {
     private static final Logger log = Logger.getLogger(Server.class.getName());
-    private final byte[] macAddress;
-
-    public Server() {
-        macAddress = getMacAddress();
-    }
+    private byte[] macAddress;
 
     @Override
     public void run() {
@@ -42,6 +37,7 @@ public class Server implements Runnable {
                                 .stream()
                                 .filter(interfaceAddress -> interfaceAddress.getBroadcast() != null)
                                 .forEach(interfaceAddress -> {
+                                    macAddress = getMacAddress(interfaceAddress);
                                     InetAddress inetAddress = interfaceAddress.getBroadcast();
                                     byte[] data = buildSendData();
                                     if (data == null) {
@@ -72,7 +68,7 @@ public class Server implements Runnable {
     private byte[] buildSendData() {
         try {
             String hostAddress = "Pavel Asadchiy " + InetAddress.getLocalHost().getHostName();
-            byte[] hostAddressBytes = hostAddress.getBytes(Charset.defaultCharset());
+            byte[] hostAddressBytes = hostAddress.getBytes(Charset.forName("UTF-8"));
             byte[] hostAddressLengthBytes = new byte[1];
             hostAddressLengthBytes[0] = (byte) hostAddress.length();
             int currentTimeSeconds = (int) (System.currentTimeMillis() / 1000);
@@ -88,13 +84,13 @@ public class Server implements Runnable {
 
     private byte[] mergeByteArrays(byte[] one, byte[] two) {
         byte[] combined = new byte[one.length + two.length];
-        System.arraycopy(one, 0, combined, 0         , one.length);
+        System.arraycopy(one, 0, combined, 0, one.length);
         System.arraycopy(two, 0, combined, one.length, two.length);
         return combined;
     }
 
     private byte[] longToByteArray(long value) {
-        return new byte[] {
+        return new byte[]{
                 (byte) (value >> 56),
                 (byte) (value >> 48),
                 (byte) (value >> 40),
@@ -107,7 +103,7 @@ public class Server implements Runnable {
     }
 
     private byte[] intToByteArray(long value) {
-        return new byte[] {
+        return new byte[]{
                 (byte) (value >> 24),
                 (byte) (value >> 16),
                 (byte) (value >> 8),
@@ -123,26 +119,13 @@ public class Server implements Runnable {
         return sb.toString();
     }
 
-    public static byte[] getMacAddress() {
-        String ip = null;
+    public static byte[] getMacAddress(InterfaceAddress interfaceAddress) {
+        String ip = interfaceAddress.getAddress().getHostAddress();
         try {
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            while (interfaces.hasMoreElements()) {
-                NetworkInterface networkInterface = interfaces.nextElement();
-                // filters out 127.0.0.1 and inactive interfaces
-                if (networkInterface.isLoopback() || !networkInterface.isUp()) {
-                    continue;
-                }
-
-                Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
-                while(addresses.hasMoreElements()) {
-                    ip = addresses.nextElement().getHostAddress();
-                }
-            }
             InetAddress name = InetAddress.getByName(ip);
             NetworkInterface network = NetworkInterface.getByInetAddress(name);
             return network.getHardwareAddress();
-        } catch (SocketException | UnknownHostException e) {
+        } catch (UnknownHostException | SocketException e) {
             log.severe("Can't get MAC address, error message: " + e.getMessage());
         }
         return null;
