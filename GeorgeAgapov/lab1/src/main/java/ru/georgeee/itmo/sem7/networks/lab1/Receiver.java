@@ -1,7 +1,6 @@
 package ru.georgeee.itmo.sem7.networks.lab1;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,17 +9,20 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.util.Map;
 
 
 @Component
-public class Receiver {
+public class Receiver implements Runnable{
     private final static Logger log = LoggerFactory.getLogger(Receiver.class);
 
     @Autowired
     private Settings settings;
 
-    public void run(Map<Long, Pair<Long, Message>> lastReceived) {
+    @Autowired
+    private ReceivedMap receivedMap;
+
+    @Override
+    public void run() {
         try {
             DatagramSocket datagramSocket = new DatagramSocket(settings.getPort());
             while (true) {
@@ -35,7 +37,7 @@ public class Receiver {
                 Message msg = Message.readFromBytes(packet.getData());
                 log.debug("Received message: {}", msg);
 
-                lastReceived.put(msg.getMacAddress(), new ImmutablePair<>(System.currentTimeMillis(), msg));
+                receivedMap.put(msg.getMacAddress(), new ImmutablePair<>(System.currentTimeMillis(), msg));
             }
         } catch (IOException e) {
             log.info("Caught exception", e);

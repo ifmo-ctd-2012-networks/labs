@@ -20,15 +20,6 @@ public class Message {
         this(readLongBE(reverse(macAddress), 0, 6), hostName, new Date());
     }
 
-    private static byte[] reverse(byte[] macAddress) {
-        for (int i = 0; i < macAddress.length / 2; ++i) {
-            byte c = macAddress[i];
-            macAddress[i] = macAddress[macAddress.length - i - 1];
-            macAddress[macAddress.length - i - 1] = c;
-        }
-        return macAddress;
-    }
-
     public Message(long macAddress, String hostName) {
         this(macAddress, hostName, new Date());
     }
@@ -37,6 +28,31 @@ public class Message {
         this.macAddress = macAddress;
         this.hostName = hostName;
         this.createdDate = createdDate;
+    }
+
+    protected static byte[] reverse(byte[] macAddress) {
+        for (int i = 0; i < macAddress.length / 2; ++i) {
+            byte c = macAddress[i];
+            macAddress[i] = macAddress[macAddress.length - i - 1];
+            macAddress[macAddress.length - i - 1] = c;
+        }
+        return macAddress;
+    }
+
+    public static Message readFromBytes(byte[] bytes) {
+        long macAddress = readLongBE(bytes, 0, 6);
+        int hostNameLength = Byte.toUnsignedInt(bytes[6]);
+        String hostName = new String(bytes, 7, hostNameLength);
+        Date createdDate = new Date(readLongBE(bytes, hostNameLength + 7, 8) * 1000);
+        return new Message(macAddress, hostName, createdDate);
+    }
+
+    protected static long readLongBE(byte[] bytes, int offset, int length) {
+        long result = 0;
+        for (int i = 0; i < length; ++i) {
+            result |= Byte.toUnsignedLong(bytes[(length - i - 1) + offset]) << (i * 8);
+        }
+        return result;
     }
 
     public byte[] getBytes() {
@@ -54,27 +70,11 @@ public class Message {
         return result;
     }
 
-    private void copyBytesBE(long src, byte[] result, int offset, int length) {
+    protected void copyBytesBE(long src, byte[] result, int offset, int length) {
         for (int i = 0; i < length; ++i) {
             long mask = 0xffL << ((length - i - 1) * 8);
             result[i + offset] = (byte) ((src & mask) >> ((length - i - 1) * 8));
         }
-    }
-
-    public static Message readFromBytes(byte[] bytes) {
-        long macAddress = readLongBE(bytes, 0, 6);
-        int hostNameLength = Byte.toUnsignedInt(bytes[6]);
-        String hostName = new String(bytes, 7, hostNameLength);
-        Date createdDate = new Date(readLongBE(bytes, hostNameLength + 7, 8) * 1000);
-        return new Message(macAddress, hostName, createdDate);
-    }
-
-    private static long readLongBE(byte[] bytes, int offset, int length) {
-        long result = 0;
-        for (int i = 0; i < length; ++i) {
-            result |= Byte.toUnsignedLong(bytes[(length - i - 1) + offset]) << (i * 8);
-        }
-        return result;
     }
 
     @Override

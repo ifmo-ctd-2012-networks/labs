@@ -1,7 +1,6 @@
 package ru.georgeee.itmo.sem7.networks.lab1;
 
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +12,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 
 @SpringBootApplication
@@ -49,10 +46,9 @@ public class Application implements CommandLineRunner {
             }
             return;
         }
-        ConcurrentMap<Long, Pair<Long, Message>> lastReceived = new ConcurrentHashMap<>();
         new Thread(sender).start();
-        new Thread(() -> receiver.run(lastReceived)).start();
-        new Thread(() -> monitor.run(lastReceived)).start();
+        new Thread(receiver).start();
+        new Thread(monitor).start();
     }
 
     private void printHelp() {
