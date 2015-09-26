@@ -1,3 +1,5 @@
+import exceptions.ProtoException;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -6,13 +8,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Client implements Runnable {
 
     private static final int PACKET_MAX_LENGTH = 500;
 
-    private final Map<String, Packet> instances = new HashMap<>();
-    private final Map<String, Integer> missedPackets = new HashMap<>();
+    private final Map<String, Packet> instances = new ConcurrentHashMap<>();
+    private final Map<String, Integer> missedPackets = new ConcurrentHashMap<>();
 
     private final int port;
 
@@ -34,12 +37,15 @@ public class Client implements Runnable {
                     Packet packet = Packet.newInstance(buffer);
                     received(packet);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    System.out.println(e.getMessage());
+                } catch (ProtoException e) {
+                    System.out.println("Invalid packet data received");
                 }
             }
 
         } catch (SocketException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
+            System.exit(1);
         }
 
     }
@@ -53,9 +59,9 @@ public class Client implements Runnable {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Thread.sleep(Server.SLEEP_TIMEOUT);
-                    System.out.println("########################");
+                    System.out.println("+-------------------------------------------------------------------------+");
                     printInstances();
-                    System.out.println("########################");
+                    System.out.println("+-------------------------------------------------------------------------+");
                     System.out.println();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -69,9 +75,14 @@ public class Client implements Runnable {
                 if (missedPackets.get(address) >= MAX_LOST_COUNT) {
                     toDelete.add(address);
                 } else {
-                    missedPackets.put(address, missedPackets.get(address) + 1);
                     Packet packet = instances.get(address);
-                    System.out.println("macAddress = " + address + ", hostName = " + packet.getName() + ", timestamp = " + packet.getTimestamp());
+                    System.out.println(
+                            "macAddress = " + address +
+                                    ", hostName = " + packet.getName() +
+                                    ", timestamp = " + packet.getTimestamp() +
+                                    ", missed count = " + missedPackets.get(address));
+
+                    missedPackets.put(address, missedPackets.get(address) + 1);
                 }
             }
 

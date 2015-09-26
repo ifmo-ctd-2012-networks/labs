@@ -23,7 +23,9 @@ public class Server extends Thread {
             try {
                 socket.receive(packet);
                 synchronized (this) {
-                    messages.add(new Message(packet.getData()));
+		    try {
+                        messages.add(new Message(packet.getData()));
+		    catch (Exception e) {}
                 }
             } catch (IOException e) {
                 if (!stopped)

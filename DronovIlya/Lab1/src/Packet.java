@@ -62,12 +62,12 @@ public class Packet {
 
         ByteBuffer buffer = ByteBuffer.allocate(8);
         buffer.order(ByteOrder.BIG_ENDIAN);
-        buffer.putLong(timestamp);
+        buffer.putLong(timestamp / 1000);
 
         return new Packet(macAddress, nameLength, name, buffer.array());
     }
 
-    public static Packet newInstance(byte[] bytes) {
+    public static Packet newInstance(byte[] bytes) throws ProtoException {
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
         byte[] macAddress = Bytes.readByteArray(buffer, MAX_ADDRESS_LENGTH);

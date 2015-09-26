@@ -12,7 +12,7 @@ HOSTNAME_LIMIT_BYTE_SIZE = 255
 HOSTNAME_ENCODING = 'utf-8'
 DELAY_SECONDS = 5
 MISSED_PACKETS_LIMIT = 5
-TIMESTAMP_BYTES = 8
+TIMESTAMP_BYTES = 4
 
 
 def format_mac(mac):
@@ -110,10 +110,19 @@ def message_handler(queue, byteorder=DEFAULT_BYTE_ORDER, loop=None):
     while True:
         data = yield from queue.get()
 
+        length = len(data)
+        if length < 7 or length != 6 + 1 + data[6] + TIMESTAMP_BYTES:
+            logger.warn('Broken message!')
+            continue
+
         sender_mac, data = format_mac(int.from_bytes(data[:6], byteorder)), data[6:]
         hostname_bytes_len, data = data[0], data[1:]
-        hostname, data = str(data[:hostname_bytes_len], encoding=HOSTNAME_ENCODING), data[hostname_bytes_len:]
-        timestamp = int.from_bytes(data[:8], byteorder)
+        try:
+            hostname, data = str(data[:hostname_bytes_len], encoding=HOSTNAME_ENCODING), data[hostname_bytes_len:]
+        except UnicodeDecodeError:
+            logger.warn('Broken message!')
+            continue
+        timestamp = int.from_bytes(data[:TIMESTAMP_BYTES], byteorder)
 
         logger.info('Message received: "MAC={} hostname={} timestamp={}"'
                     .format(sender_mac, hostname, timestamp))

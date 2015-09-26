@@ -7,18 +7,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 
 
 @Component
-public class Monitor {
+public class Monitor implements Runnable{
     private final static Logger log = LoggerFactory.getLogger(Monitor.class);
 
     @Autowired
     private Settings settings;
 
-    public void run(ConcurrentMap<Long, Pair<Long, Message>> lastReceived) {
+    @Autowired
+    private ReceivedMap receivedMap;
+
+    @Override
+    public void run() {
         Map<Long, Message> alive = new HashMap<>();
         while (true) {
             if (Thread.interrupted()) {
@@ -27,11 +31,14 @@ public class Monitor {
             }
             long currentTime = System.currentTimeMillis();
 
-            for (Pair<Long, Message> pair : lastReceived.values()) {
+            Iterator<Pair<Long, Message>> iterator = receivedMap.values().iterator();
+            while(iterator.hasNext()){
+                Pair<Long, Message> pair = iterator.next();
                 long timestamp = pair.getLeft();
                 Message msg = pair.getRight();
                 if (currentTime - timestamp > settings.getMissedThreshold() * settings.getInterval() * 1000) {
                     alive.remove(msg.getMacAddress());
+                    iterator.remove();
                 } else {
                     alive.put(msg.getMacAddress(), msg);
                 }
@@ -44,7 +51,7 @@ public class Monitor {
                         .append(" 0x").append(Long.toHexString(msg.getMacAddress()))
                         .append("}, ");
             }
-            System.out.println(sb);
+            log.info(sb.toString());
 
             try {
                 Thread.sleep(settings.getInterval() * 1000);

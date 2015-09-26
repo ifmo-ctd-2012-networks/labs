@@ -1,7 +1,6 @@
 package ru.georgeee.itmo.sem7.networks.lab1;
 
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +11,8 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.util.Arrays;
 import java.util.Enumeration;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 
 @SpringBootApplication
@@ -49,10 +47,13 @@ public class Application implements CommandLineRunner {
             }
             return;
         }
-        ConcurrentMap<Long, Pair<Long, Message>> lastReceived = new ConcurrentHashMap<>();
         new Thread(sender).start();
-        new Thread(() -> receiver.run(lastReceived)).start();
-        new Thread(() -> monitor.run(lastReceived)).start();
+        if (settings.getSendingStrategy().isLaunchReceiver()) {
+            new Thread(receiver).start();
+        }
+        if (settings.getSendingStrategy().isLaunchMonitor()) {
+            new Thread(monitor).start();
+        }
     }
 
     private void printHelp() {
@@ -64,6 +65,7 @@ public class Application implements CommandLineRunner {
 //        System.out.println("--addr={addr} \t\t\t broadcast address to use, defaults to 255.255.255.255");
         System.out.println("--interval={interval} \t\t\t interval to use, in seconds, defaults to 5");
         System.out.println("--missedThreshold={threshold} \t\t\t threshold to use, number of packets to be missed to assume node as dead, defaults to 3");
+        System.out.println("--strategy={sending strategy} \t\t\t one of " + Arrays.toString(Sender.getStrategyNames()));
     }
 
     public static void main(String[] args) throws Exception {

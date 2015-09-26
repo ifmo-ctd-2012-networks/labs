@@ -30,8 +30,13 @@ public class Receiving implements Runnable {
                 DatagramPacket packet = new DatagramPacket(new byte[266], 266);
                 try {
                     socket.receive(packet);
-                    UDP message = new UDP(Arrays.copyOfRange(packet.getData(), 0, packet.getLength()));
-                    db.add(message);
+                    byte[] bytes = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
+                    if(bytes.length >= 11) {
+                        if(bytes.length ==  (bytes[6] & 0xFF) + 11) {
+                            UDP message = new UDP(bytes);
+                            db.add(message);
+                        }
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
