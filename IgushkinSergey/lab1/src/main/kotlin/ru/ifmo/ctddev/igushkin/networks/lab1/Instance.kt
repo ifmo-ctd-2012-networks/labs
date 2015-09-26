@@ -47,13 +47,15 @@ public class Instance(public val iface: NetworkInterface,
                 val input = bytes.inputStream(0, packet.length)
                 fun getBytes(n: Int) = ByteArray(n).apply { input.read(this) }
 
+                if (input.available() < 11) continue;
+
                 val macAddr = getBytes(6).toHexString("-")
                 var hostNameLength = getBytes(1)[0].toInt()
                 if (hostNameLength < 0)
                     hostNameLength += 128;
 
                 val hostName = getBytes(hostNameLength).toString(CHARSET)
-                val time = getBytes(4).getInt()
+                val time = getBytes(8).getInt()
 
                 neighbours.getOrPut(macAddr) {
                     NeighbourEntry(InstanceEntry(macAddr, hostName), 0, false, 0)
