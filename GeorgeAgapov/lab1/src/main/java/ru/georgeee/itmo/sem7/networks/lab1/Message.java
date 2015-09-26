@@ -17,7 +17,7 @@ public class Message {
     private final Date createdDate;
 
     public Message(byte[] macAddress, String hostName) {
-        this(readLongBE(reverse(macAddress), 0, 6), hostName, new Date());
+        this(macAddress == null ? 0 : readLongBE(reverse(macAddress), 0, 6), hostName, new Date());
     }
 
     public Message(long macAddress, String hostName) {

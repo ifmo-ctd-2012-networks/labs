@@ -51,7 +51,7 @@ public class Monitor implements Runnable{
                         .append(" 0x").append(Long.toHexString(msg.getMacAddress()))
                         .append("}, ");
             }
-            System.out.println(sb);
+            log.info(sb.toString());
 
             try {
                 Thread.sleep(settings.getInterval() * 1000);

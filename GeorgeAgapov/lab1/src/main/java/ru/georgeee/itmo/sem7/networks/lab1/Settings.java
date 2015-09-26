@@ -50,8 +50,20 @@ public class Settings {
     @Value("${iface:}")
     private String interfaceName;
 
+    @Value("${strategy:NORMAL}")
+    private String sendingStrategyString;
+
+    @Getter
+    private Sender.SendingStrategy sendingStrategy;
+
     @PostConstruct
-    private void init() {
+    public void init() {
+        try {
+            sendingStrategy = Sender.SendingStrategy.valueOf(sendingStrategyString.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            sendingStrategy = Sender.SendingStrategy.NORMAL;
+        }
+        log.info("Using sending strategy: {}", sendingStrategy);
         try {
             Enumeration<NetworkInterface> ifaceEnumeration = NetworkInterface.getNetworkInterfaces();
             while (ifaceEnumeration.hasMoreElements()) {

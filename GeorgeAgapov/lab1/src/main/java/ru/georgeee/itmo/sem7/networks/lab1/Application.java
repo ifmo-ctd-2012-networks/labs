@@ -48,8 +48,12 @@ public class Application implements CommandLineRunner {
             return;
         }
         new Thread(sender).start();
-        new Thread(receiver).start();
-        new Thread(monitor).start();
+        if (settings.getSendingStrategy().isLaunchReceiver()) {
+            new Thread(receiver).start();
+        }
+        if (settings.getSendingStrategy().isLaunchMonitor()) {
+            new Thread(monitor).start();
+        }
     }
 
     private void printHelp() {

@@ -1,10 +1,10 @@
 package ru.georgeee.itmo.sem7.networks.lab1;
 
+import lombok.Getter;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -13,33 +13,35 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InterfaceAddress;
 import java.util.Arrays;
-import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 @Component
 public class Sender implements Runnable {
     private final static Logger log = LoggerFactory.getLogger(Sender.class);
-    private final Random random = new Random(System.currentTimeMillis());
     @Autowired
     private Settings settings;
-    @Value("${strategy:NORMAL}")
-    private String sendingStrategyString;
-    private Sender.SendingStrategy sendingStrategy;
     @Autowired
     private ReceivedMap receivedMap;
+    private volatile int sendCounter;
 
     public static String[] getStrategyNames() {
         return Arrays.asList(SendingStrategy.values()).stream().map(SendingStrategy::name).toArray(String[]::new);
     }
 
     @PostConstruct
-    public void init() {
-        try {
-            sendingStrategy = SendingStrategy.valueOf(sendingStrategyString.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            sendingStrategy = SendingStrategy.NORMAL;
-        }
-        log.info("Using sending strategy: {}", sendingStrategy);
+    private void init(){
+        scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+            private int last;
+
+            @Override
+            public void run() {
+                log.info("Sent {} messages", sendCounter - last);
+                last = sendCounter;
+            }
+        }, 0, settings.getInterval(), TimeUnit.SECONDS);
     }
 
     public void run() {
@@ -51,7 +53,8 @@ public class Sender implements Runnable {
                     break;
                 }
 
-                sendingStrategy.function.apply(this, datagramSocket);
+                settings.getSendingStrategy().function.apply(this, datagramSocket);
+                sendCounter++;
             }
         } catch (SendException e) {
             if (e.getCause() instanceof IOException) {
@@ -107,16 +110,18 @@ public class Sender implements Runnable {
 
     private Void attack3Send(DatagramSocket datagramSocket) {
         try {
-            sendSelfMessage(datagramSocket);
+            sendSelfMessage(datagramSocket, true);
         } catch (IOException e) {
             throw new SendException(e);
         }
         return null;
     }
 
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
+
     private Void attack4Send(DatagramSocket datagramSocket) {
         try {
-            sendMessage(new Message(random.nextLong(), settings.getHostName()), datagramSocket);
+            sendMessage(new Message(sendCounter, settings.getHostName()), datagramSocket, true);
         } catch (IOException e) {
             throw new SendException(e);
         }
@@ -124,8 +129,12 @@ public class Sender implements Runnable {
     }
 
     private void sendSelfMessage(DatagramSocket datagramSocket) throws IOException {
+        sendSelfMessage(datagramSocket, false);
+    }
+
+    private void sendSelfMessage(DatagramSocket datagramSocket, boolean disableLogging) throws IOException {
         Message msg = new Message(settings.getNetworkInterface().getHardwareAddress(), settings.getHostName());
-        sendMessage(msg, datagramSocket);
+        sendMessage(msg, datagramSocket, disableLogging);
     }
 
     private void sleep() {
@@ -137,7 +146,13 @@ public class Sender implements Runnable {
     }
 
     private void sendMessage(Message msg, DatagramSocket datagramSocket) throws IOException {
-        log.debug("Sending message: {}", msg);
+        sendMessage(msg, datagramSocket, false);
+    }
+
+    private void sendMessage(Message msg, DatagramSocket datagramSocket, boolean disableLogging) throws IOException {
+        if (!disableLogging) {
+            log.debug("Sending message: {}", msg);
+        }
         byte[] msgBytes = msg.getBytes();
         for (InterfaceAddress address : settings.getNetworkInterface().getInterfaceAddresses()) {
             if (address.getBroadcast() != null) {
@@ -146,14 +161,29 @@ public class Sender implements Runnable {
         }
     }
 
-    private enum SendingStrategy {
-        NORMAL(Sender::normalSend), ATTACK3(Sender::attack3Send), ATTACK4(Sender::attack4Send), ATTACK1(Sender::attack1Send), ATTACK2(Sender::attack2Send);
+    public enum SendingStrategy {
+        NORMAL(Sender::normalSend, true, true),
+        ATTACK3(Sender::attack3Send),
+        ATTACK4(Sender::attack4Send),
+        ATTACK1(Sender::attack1Send),
+        ATTACK2(Sender::attack2Send, true, false);
 
         private final BiFunction<Sender, DatagramSocket, ?> function;
+        @Getter
+        private final boolean launchReceiver;
+        @Getter
+        private final boolean launchMonitor;
+
+        SendingStrategy(BiFunction<Sender, DatagramSocket, ?> function, boolean launchReceiver, boolean launchMonitor) {
+            this.function = function;
+            this.launchReceiver = launchReceiver;
+            this.launchMonitor = launchMonitor;
+        }
 
         SendingStrategy(BiFunction<Sender, DatagramSocket, ?> function) {
-            this.function = function;
+            this(function, false, false);
         }
+
     }
 
     private static class SendException extends RuntimeException {
