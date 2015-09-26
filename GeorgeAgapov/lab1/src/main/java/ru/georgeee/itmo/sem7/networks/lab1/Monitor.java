@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 
@@ -30,11 +31,14 @@ public class Monitor implements Runnable{
             }
             long currentTime = System.currentTimeMillis();
 
-            for (Pair<Long, Message> pair : receivedMap.values()) {
+            Iterator<Pair<Long, Message>> iterator = receivedMap.values().iterator();
+            while(iterator.hasNext()){
+                Pair<Long, Message> pair = iterator.next();
                 long timestamp = pair.getLeft();
                 Message msg = pair.getRight();
                 if (currentTime - timestamp > settings.getMissedThreshold() * settings.getInterval() * 1000) {
                     alive.remove(msg.getMacAddress());
+                    iterator.remove();
                 } else {
                     alive.put(msg.getMacAddress(), msg);
                 }

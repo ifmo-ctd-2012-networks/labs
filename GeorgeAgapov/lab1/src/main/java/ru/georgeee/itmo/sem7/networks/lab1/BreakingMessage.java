@@ -2,7 +2,7 @@ package ru.georgeee.itmo.sem7.networks.lab1;
 
 public class BreakingMessage extends Message {
     public BreakingMessage() {
-        super(new byte[0], "");
+        super(0, "");
     }
 
     @Override

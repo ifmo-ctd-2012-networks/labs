@@ -11,6 +11,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.util.Arrays;
 import java.util.Enumeration;
 
 
@@ -60,6 +61,7 @@ public class Application implements CommandLineRunner {
 //        System.out.println("--addr={addr} \t\t\t broadcast address to use, defaults to 255.255.255.255");
         System.out.println("--interval={interval} \t\t\t interval to use, in seconds, defaults to 5");
         System.out.println("--missedThreshold={threshold} \t\t\t threshold to use, number of packets to be missed to assume node as dead, defaults to 3");
+        System.out.println("--strategy={sending strategy} \t\t\t one of " + Arrays.toString(Sender.getStrategyNames()));
     }
 
     public static void main(String[] args) throws Exception {

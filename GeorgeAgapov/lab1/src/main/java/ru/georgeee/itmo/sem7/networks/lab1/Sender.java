@@ -7,10 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InterfaceAddress;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.function.BiFunction;
 
@@ -21,9 +23,24 @@ public class Sender implements Runnable {
     @Autowired
     private Settings settings;
     @Value("${strategy:NORMAL}")
+    private String sendingStrategyString;
     private Sender.SendingStrategy sendingStrategy;
     @Autowired
     private ReceivedMap receivedMap;
+
+    public static String[] getStrategyNames() {
+        return Arrays.asList(SendingStrategy.values()).stream().map(SendingStrategy::name).toArray(String[]::new);
+    }
+
+    @PostConstruct
+    public void init() {
+        try {
+            sendingStrategy = SendingStrategy.valueOf(sendingStrategyString.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            sendingStrategy = SendingStrategy.NORMAL;
+        }
+        log.info("Using sending strategy: {}", sendingStrategy);
+    }
 
     public void run() {
         try {
@@ -111,7 +128,7 @@ public class Sender implements Runnable {
         sendMessage(msg, datagramSocket);
     }
 
-    private void sleep(){
+    private void sleep() {
         try {
             Thread.sleep(settings.getInterval() * 1000);
         } catch (InterruptedException e) {
