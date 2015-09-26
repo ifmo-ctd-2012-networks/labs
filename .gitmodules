@@ -1,3 +1,6 @@
 [submodule "IsaevIlya"]
 	path = IsaevIlya
 	url = https://github.com/isae/networking-labs.git
+[submodule "labs/SkiporVladimir"]
+	path = labs/SkiporVladimir
+	url = git@github.com:Skipor/networks_lab1.git
