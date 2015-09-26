@@ -42,10 +42,9 @@ public class Server implements Runnable {
                         }
                     }
                     Thread.sleep(SLEEP_TIMEOUT);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                } catch (IOException | InterruptedException e) {
+                    System.out.println(e.getMessage());
+                    System.exit(1);
                 }
             }
 

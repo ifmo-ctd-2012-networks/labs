@@ -1,3 +1,5 @@
+import exceptions.ProtoException;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -34,12 +36,15 @@ public class Client implements Runnable {
                     Packet packet = Packet.newInstance(buffer);
                     received(packet);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    System.out.println(e.getMessage());
+                } catch (ProtoException e) {
+                    System.out.println("Invalid packet data received");
                 }
             }
 
         } catch (SocketException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
+            System.exit(1);
         }
 
     }
@@ -71,7 +76,11 @@ public class Client implements Runnable {
                 } else {
                     missedPackets.put(address, missedPackets.get(address) + 1);
                     Packet packet = instances.get(address);
-                    System.out.println("macAddress = " + address + ", hostName = " + packet.getName() + ", timestamp = " + packet.getTimestamp());
+                    System.out.println(
+                            "macAddress = " + address +
+                            ", hostName = " + packet.getName() +
+                            ", timestamp = " + packet.getTimestamp() +
+                            ", missed count = " + missedPackets.get(address));
                 }
             }
 
