@@ -1,3 +1,5 @@
+import com.sun.org.apache.bcel.internal.generic.NEW;
+
 import java.io.IOException;
 import java.net.*;
 import java.util.Enumeration;
@@ -10,9 +12,29 @@ public class Server implements Runnable {
     private final int port;
     private final String hostName;
 
-    public Server(int port) throws UnknownHostException {
+    private NetworkInterface networkInterface;
+    private InetAddress broadcastAddress;
+
+    public Server(int port) throws UnknownHostException, SocketException {
         this.port = port;
         this.hostName = InetAddress.getLocalHost().getHostName();
+
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface nI = interfaces.nextElement();
+            if (nI.isUp() && !nI.isLoopback()) {
+                List<InterfaceAddress> attachedAddresses = nI.getInterfaceAddresses();
+                if (attachedAddresses != null) {
+                    for (InterfaceAddress address : attachedAddresses) {
+                        if (address.getBroadcast() != null) {
+                            this.networkInterface = nI;
+                            this.broadcastAddress = address.getBroadcast();
+                        }
+                    }
+                }
+            }
+        }
+
     }
 
     @Override
@@ -22,25 +44,12 @@ public class Server implements Runnable {
             while (!Thread.currentThread().isInterrupted()) {
 
                 try {
-                    Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-                    while (interfaces.hasMoreElements()) {
-                        NetworkInterface networkInterface = interfaces.nextElement();
-                        if (networkInterface.isUp() && !networkInterface.isLoopback()) {
-                            List<InterfaceAddress> attachedAddresses = networkInterface.getInterfaceAddresses();
-                            if (attachedAddresses != null) {
-                                for (InterfaceAddress address : attachedAddresses) {
-                                    if (address.getBroadcast() != null) {
-                                        Packet packet = Packet.newInstance(networkInterface.getHardwareAddress(),
-                                                hostName, System.currentTimeMillis());
-                                        byte[] buffer = packet.getBytes();
-                                        DatagramPacket datagramPacket = new DatagramPacket(buffer, buffer.length,
-                                                address.getBroadcast(), port);
-                                        socket.send(datagramPacket);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    Packet packet = Packet.newInstance(networkInterface.getHardwareAddress(),
+                            hostName, System.currentTimeMillis());
+                    byte[] buffer = packet.getBytes();
+                    DatagramPacket datagramPacket = new DatagramPacket(buffer, buffer.length,
+                            broadcastAddress, port);
+                    socket.send(datagramPacket);
                     Thread.sleep(SLEEP_TIMEOUT);
                 } catch (IOException | InterruptedException e) {
                     System.out.println(e.getMessage());
