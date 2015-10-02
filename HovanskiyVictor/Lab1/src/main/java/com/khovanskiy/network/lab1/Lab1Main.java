@@ -80,9 +80,9 @@ public class Lab1Main implements Runnable {
                     MacAddress macAddress = new MacAddress(mac);
                     InetAddress address = pair.getValue();
                     long timestamp = getUnixTimestamp();
-                    Message message = new Message(macAddress, UUID.randomUUID().toString().substring(0, 9), timestamp);
+                    Message networks.lab2.message = new Message(macAddress, UUID.randomUUID().toString().substring(0, 9), timestamp);
                     InetSocketAddress inetSocketAddress = new InetSocketAddress(address, port);
-                    sender.send(inetSocketAddress, message);
+                    sender.send(inetSocketAddress, networks.lab2.message);
                 }
             }*/
             for (Pair<byte[], InetAddress> pair : getBroadcast()) {
