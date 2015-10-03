@@ -1,6 +1,6 @@
 ---
 title: Team #1 protocol specifications
-permalink: /
+permalink: index.html
 ---
 
 # Team #1 protocol specifications
