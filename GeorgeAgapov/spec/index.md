@@ -17,4 +17,4 @@ ITMO Networks, autumn 2015
 
 ## Protocols
 
-  1. [Jitterbug](/jitterbug/) - homework #2
+  1. [Jitterbug](jitterbug.html) - homework #2
