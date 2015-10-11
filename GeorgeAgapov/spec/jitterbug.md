@@ -17,10 +17,13 @@ It provides following garantees:
    * No node can be deleted from the list
       * Dead nodes are handled via penalties
    * Up-to-date version of node list is transferred with token
- * Messages are enumerated, algo maintains chains of messages with sequent numbers with no repeats
+
+Also, with proper decision function supplied (see *token_pass* procedure description), algo maintains following out-of-box:
+
+ * Sequent calculations without interruptions and downgrades to prior values
    * Generally, algo tries to maintain a single chain, but eventually extra chains may arise
-   * For any message, sequence of preceeding messages can be strictly determined
-   * This sequence is distributed and can be determined only by getting information from all nodes, occured in communication
+   * When structure of ring is modified (merging with other ring with ad-hoc message sequence, token holder death) and there are more than one message sequence, algo correclty decides, which sequence is to be continued
+     * this decision relies on aforementioned decision function, supplied by application
 
 By initial design, algo supports up to 2^14 participants, but it can be easily adjusted for bigger amount.
 
@@ -38,14 +41,13 @@ In next sections we describe each state in turn, referencing procedures availabl
 
 Basic concept of Jitterbug protocol is to maintain a minimal set of subnets (i.e. connected graphs of nodes) with proper support them to be splitted/merged.
 
-In each state, node maintains following *state variables* (updated only in node's leader state)
+In each state, node maintains following *state variables* (updated only in node\'s leader state)
 
-  * last msg_id
-  * last token_id
-  * last sent data
+  * token_id
+  * sent data
   * list of nodes
   * set of nodes to add
-  * nodes' penalties
+  * nodes\' penalties
 
 ### Orphan state
 
@@ -63,7 +65,7 @@ To do so, node initiates *token_restore* procedure, after executing which it swi
 
 ### Waiter state
 
-It's a passive state of algo. In this state node waits for either of events to occur:
+It\'s a passive state of algo. In this state node waits for either of events to occur:
   
   * {renew_timeout} occurs, node becomes an orphan
   * token received, node becomes a leader
@@ -73,7 +75,7 @@ It's an active state of node. Being in this state node follows such flow:
 
   1. Computes next message
   2. Updates *state variables*:
-      1. increment msg_id
+      1. token_id, data, penalties
       2. updates node list with new nodes, not yet in the list
   3. Launchs *token_pass* procedure
 
@@ -81,31 +83,33 @@ It's an active state of node. Being in this state node follows such flow:
 
 ### token_restore
 
-Token restore procedure's purpose is to get node acknowledged of current active token status.
+Token restore procedure\'s purpose is to get node acknowledged of current active token status.
 
-It's launched by node, being in orphan state. For sender algo is following:
+It\'s launched by node, being in orphan state. For sender algo is following:
 
 **token_restore_try** (*tryout_token_id*):
 
-  1. Repeatedly send a UDP broadcast with message < TR1, last msg_id, *tryout_token_id* >
+  1. Repeatedly send a UDP broadcast with message < TR1, *tryout_token_id* >
       * repeat interval is {tr_interval}
       * should repeat {tr_count} times
   2. Wait {tr_count}*{tr_interval} time for replies
-      * replies would be of kind < TR2, msg_id, token_id >
+      * replies would be of kind < TR2, holds_token, token_id >
   3. Analize replies
-      * if there exist a tuple < msg_id, token_id > greater, than ours < last msg_id, *tryout_token_id* > (lexicographicaly)
+      * if received a message < TR2,  1 , token_id >, than there exist a leader
           * **return false**
-      * if there exist no such tuple
+      * if there exist a message of kind < TR2,  0 , token_id > with _token_id_ greater than *tryout_token_id*
           * **return false**
+      * otherwise
+          * **return true**
 
 **token_restore** ():
   
-  1. access_granted_1 = **token_restore_try** (last_token_id) 
-      * //try to grab access on leadership with last token id
+  1. access_granted_1 = **token_restore_try** (self_token_id) 
+      * //try to grab access on leadership with self token id
   2. if (access_granted_1)
-      1. last_token_id = generate_new_token_id ()
+      1. self_token_id = generate_new_token_id ()
           *  //generate new random token_id
-      2. access_granted_2 = **token_restore_try** (last_token_id) 
+      2. access_granted_2 = **token_restore_try** (self_token_id) 
           * //try to ensure we still have rights for leadership, i.e. there still exist no tuple greater after token_id generation
       3. if (access_granted_2)
           * switch state to *leader*
@@ -113,12 +117,14 @@ It's launched by node, being in orphan state. For sender algo is following:
           * switch state to *waiter*
   3. switch state to *waiter*
 
-All other nodes should do following on receiving of < TR1, msg_id, token_id > (for each message received):
+All other nodes should do following on receiving of < TR1, token_id > (for each message received):
 
-  1. if tuple < msg_id, token_id > is greater, than ours, do nothing
+  1. if in leader state, send < TR2, 1, self token_id >
   2. otherwise
-      1. send < TR2, last msg_id, last token_id > as a reply (via UDP, only to sender's IP address)
-      2. remember node to be later added to node list
+      1. if received token_id is greater, than ours, do nothing
+      2. otherwise
+          1. send < TR2, 0, self token_id > as a reply (via UDP, only to sender's IP address)
+          2. remember node to be later added to node list
 
 See **Appendix A** section for some additional remarks regarding **token_restore** procedure (explanation of why it won't end up into infinite loop).
 
@@ -139,16 +145,18 @@ More detailed, for a single candidate:
 #### *token_pass_for_candidate ( candidate_i )*:
 
   0. Execute within timeout {token_pass_timeout}
-    1. Leader passes message < TP1, msg_id, token_id, node_list_hash > to candidate
-        1. If candidate's < msg_id, token_id > are greater than leader's, it replies with < TP2 >, indicating that leader's token is outdated
-           * **return true**
-        2. otherwise candidate checks node_list_hash with hash of his node list and replies:
+    1. Leader computes new data from data variable, updates data variable
+    1. Leader passes message < TP1, token_id, node_list_hash > to candidate
+        1. candidate checks node_list_hash with hash of his node list and replies:
            1. < TP3 >, if hashs differ
               1. Leader sends message < TP5, node_list >
-              2. Candidate remembers node_list for the connection (but doesn't update variables)
+              2. Candidate remembers node_list for the connection (but doesn\'t update variables)
            2. < TP4 >, if hashs are equal. This case, candidate remembers node_list for the connection
-    2. Leader passes a message < TP6, msg_id, token_id, data > to candidate
-      * token was passed
+    2. Leader passes a message < TP6, token_id, data > to candidate
+        * token was passed
+        1. candidate compares (using decision function) received data with it's data variable
+        2. if self data is decided as less valuable, data and token_id variables are updated with received values
+        3. candidate switches to leader state
     3. Leader updates node_list variable with updated penalties (see bellow)
     4. **return true**
   1. Timeut ticked, **return false**
@@ -180,6 +188,15 @@ First, we check for is candidate allowed to participate in current round:
           1. penalty_threshold_i++
   4. else
       1. penalty_count_i++
+  5. node switches to waiter state
+
+## Decision function
+
+In algo's description we widely used term "decision function". It\'s basically a function with following properties:
+
+ * decisionFunction :: Data -> Data -> Bool
+ * returns true, if first data should be taken as a base for continuing message sequence or false otherwise
+ * for holding garantees, mentioned in preface (second group) this function should be pure, i.e. be dependent only on data provided
 
 ## Messages and variables
   
@@ -207,9 +224,9 @@ Node list:
 
 Node list hash is a standard polynomial hash on base of 577.
 
-message_id, token_id are 4-byte integers. token_id is randomly generated (in *token_restore* procedure)
+token_id is a 4-byte integers, generated randomly (in *token_restore* procedure)
 
-Data is sent naturally, as byte sequence (prepended with 4-byte size of block being sent).
+Data is sent naturally, as byte sequence (prepended with 4-byte amount of bytes being sent).
 
 ## Appendix A
 
@@ -219,13 +236,8 @@ First, let's note, how token_id numbers are generated. They are generally random
 
 Given a uniform distribution accross all generated numbers, it's not hard to find upper bound of expected value of times, *token_pass* procedure would be launched before any node finally takes leadership (we consider now a single subnet, no merges/splits with other subnets occur).
 
-If any node has msg_id, greater than anyone else has, this node will become a leader when it would launch **token_restore** procedure in one step, so let's consider only case, when more than one node has maximal msg_id.
+If our token_id is greater than any other token_id in system and no leader exist, we take the leadership. Otherwise there exist at least one node, whoes token_id is greater. Token_ids are uniformly distributed within range 0..2^32-1, so possibility that one lower or equal, than other is 1/2. So with possibility 1/2 **token_restore** would be launched only once.
 
-
-If our < msg_id, token_id > is greater than any other < msg_id, token_id > in system, we take the leadership. Otherwise there exist at least one node, whoes msg_id is equal to ours and token_id is greater. Token_ids are uniformly distributed within range 0..2^32-1, so possibility that one lower or equal, than other is 1/2. So with possibility 1/2 **token_restore** would be launched only once.
-
-Same reasoning could be applied to further steps, which directly implies possibility for k-th launch to succeed as 1/2^i.
+Same reasoning could be applied to further steps, which directly implies possibility for k-th launch to succeed as 1/2^k.
 
 Taking sum of series 1/2^i from i=0 to oo, we conclude to expected value of **token_restore** launches be not greater than 2.
-
-Actually, it's lower, cause we considered only case with equal msg_ids. Considered that in most cases max(msg_id) is held by only node in subnet, expected value of launches would be even less.
