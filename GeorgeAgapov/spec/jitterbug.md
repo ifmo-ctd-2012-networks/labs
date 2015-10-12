@@ -41,13 +41,13 @@ In next sections we describe each state in turn, referencing procedures availabl
 
 Basic concept of Jitterbug protocol is to maintain a minimal set of subnets (i.e. connected graphs of nodes) with proper support them to be splitted/merged.
 
-In each state, node maintains following *state variables* (updated only in node\'s leader state)
+In each state, node maintains following *state variables* (updated only in node's leader state)
 
   * token_id
-  * sent data
+  * data
   * list of nodes
   * set of nodes to add
-  * nodes\' penalties
+  * nodes' penalties
 
 ### Orphan state
 
@@ -65,7 +65,7 @@ To do so, node initiates *token_restore* procedure, after executing which it swi
 
 ### Waiter state
 
-It\'s a passive state of algo. In this state node waits for either of events to occur:
+It's a passive state of algo. In this state node waits for either of events to occur:
   
   * {renew_timeout} occurs, node becomes an orphan
   * token received, node becomes a leader
@@ -83,9 +83,9 @@ It's an active state of node. Being in this state node follows such flow:
 
 ### token_restore
 
-Token restore procedure\'s purpose is to get node acknowledged of current active token status.
+Token restore procedure's purpose is to get node acknowledged of current active token status.
 
-It\'s launched by node, being in orphan state. For sender algo is following:
+It's launched by node, being in orphan state. For sender algo is following:
 
 **token_restore_try** (*tryout_token_id*):
 
@@ -150,7 +150,7 @@ More detailed, for a single candidate:
         1. candidate checks node_list_hash with hash of his node list and replies:
            1. < TP3 >, if hashs differ
               1. Leader sends message < TP5, node_list >
-              2. Candidate remembers node_list for the connection (but doesn\'t update variables)
+              2. Candidate remembers node_list for the connection (but doesn't update variables)
            2. < TP4 >, if hashs are equal. This case, candidate remembers node_list for the connection
     2. Leader passes a message < TP6, token_id, data > to candidate
         * token was passed
@@ -192,7 +192,7 @@ First, we check for is candidate allowed to participate in current round:
 
 ## Decision function
 
-In algo's description we widely used term "decision function". It\'s basically a function with following properties:
+In algo's description we widely used term "decision function". It's basically a function with following properties:
 
  * decisionFunction :: Data -> Data -> Bool
  * returns true, if first data should be taken as a base for continuing message sequence or false otherwise
