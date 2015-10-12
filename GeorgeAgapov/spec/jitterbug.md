@@ -25,7 +25,6 @@ Also, with proper decision function supplied (see *token_pass* procedure descrip
    * When structure of ring is modified (merging with other ring with ad-hoc message sequence, token holder death) and there are more than one message sequence, algo correclty decides, which sequence is to be continued
      * this decision relies on aforementioned decision function, supplied by application
 
-By initial design, algo supports up to 2^14 participants, but it can be easily adjusted for bigger amount.
 
 ## Node states
 
@@ -63,6 +62,8 @@ To do so, node initiates *token_restore* procedure, after executing which it swi
   * waiter
   * leader
 
+This procedure requires waiting for replies from other nodes (which are checked with timeouts) and hence should be launched in parallel with usual waiting for token pass (that may be initiated by other node within these timeouts).
+
 ### Waiter state
 
 It's a passive state of algo. In this state node waits for either of events to occur:
@@ -95,6 +96,7 @@ It's launched by node, being in orphan state. For sender algo is following:
   2. Wait {tr_count}*{tr_interval} time for replies
       * replies would be of kind < TR2, holds_token, token_id >
   3. Analize replies
+      * if within timeout we've switched our state to leader at least once, abort procedure (i.e. do nothing)
       * if received a message < TR2,  1 , token_id >, than there exist a leader
           * **return false**
       * if there exist a message of kind < TR2,  0 , token_id > with _token_id_ greater than *tryout_token_id*
@@ -148,11 +150,11 @@ More detailed, for a single candidate:
     1. Leader computes new data from data variable, updates data variable
     1. Leader passes message < TP1, token_id, node_list_hash > to candidate
         1. candidate checks node_list_hash with hash of his node list and replies:
-           1. < TP3 >, if hashs differ
-              1. Leader sends message < TP5, node_list >
+           1. < TP2 >, if hashs differ
+              1. Leader sends message < TP4, node_list >
               2. Candidate remembers node_list for the connection (but doesn't update variables)
-           2. < TP4 >, if hashs are equal. This case, candidate remembers node_list for the connection
-    2. Leader passes a message < TP6, token_id, data > to candidate
+           2. < TP3 >, if hashs are equal. This case, candidate remembers node_list for the connection
+    2. Leader passes a message < TP5, token_id, data > to candidate
         * token was passed
         1. candidate compares (using decision function) received data with it's data variable
         2. if self data is decided as less valuable, data and token_id variables are updated with received values
@@ -214,13 +216,20 @@ Type constants:
   * TP3 = 4
   * TP4 = 5
   * TP5 = 6
-  * TP6 = 7
 
 Node list:
 
-  * two-byte size of list
+  * 4-byte size of list
   * nodes in format:
-     * ip address, 4 bytes
+     * 1-byte meta-info
+        * lowest bit, 0 - version of ip to use:
+          * 1 for IPv6
+          * 0 for IPv4
+        * rest of the bits, 1..7 are reserved for future use
+     * ip address
+        * 4 bytes for IPv4
+        * 16 bytes for IPv6
+     * port, 2 bytes
 
 Node list hash is a standard polynomial hash on base of 577.
 
