@@ -48,13 +48,15 @@ In each state, node maintains following *state variables* (updated only in node'
   * set of nodes to add
   * nodes' penalties
 
+All nodes listen to specified (same for all nodes) udp port {udp_port}. Node is free to listen to any tcp port, but it shouldn't be changed during node's lifetime.
+
 ### Orphan state
 
 Being orphan means that you are not associated yet with any subnet.
 Node can have orphan state only in two cases:
 
  * when it was just initiated, i.e. haven't yet participated in any communication with other nodes
- * after {renew_timeout} occured, i.e. node realizes that it haven't received messages but for too long
+ * after {renew_timeout} occurred, i.e. node realizes that it haven't received messages but for too long
 
 When node find itself an orphan, it tries to join active subnet (or create own if no yet exist).
 To do so, node initiates *token_restore* procedure, after executing which it switches state to one of:
@@ -220,6 +222,7 @@ Rest bytes of each message should be encoded in following format:
 
   * TR1
     1. token_id
+    2. node_tcp_port
   * TR2
     1. token_id
   * TP1
@@ -240,6 +243,7 @@ In above:
   * token_id - 4-byte integer. Meanfull token part (generated in *token_restore*) is stored in 31 bits, leadership is defined by sign:
     * positive value if node is a leader (holds token)
     * negative value otherwise
+  * node_tcp_port - 2-byte integer. Port to which tcp listener is bound
   * node_list
     * 4-byte size of list
     * nodes in format:
