@@ -5,9 +5,9 @@ import lombok.Getter;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 class Context<D extends Data<D>> {
     @Getter
@@ -16,19 +16,13 @@ class Context<D extends Data<D>> {
     private final MessageService<D> messageService;
     @Getter
     private final ExecutorService executor;
+    @Getter
+    private final ScheduledExecutorService scheduledExecutor;
     private final TRListener<D> trListener;
     private final TPListener<D> tpListener;
     private final Processor<D> processor;
-
-    BlockingQueue<Event> getQueue(){
-        return processor.getQueue();
-    }
-
-    VariableHolder<D> getVariables(){
-        return processor;
-    }
-
-
+    @Getter
+    private final int tcpPort;
 
     public Context(Settings<D> settings) throws IOException {
         this.settings = settings;
@@ -36,9 +30,15 @@ class Context<D extends Data<D>> {
         executor = Executors.newFixedThreadPool(settings.getExecutorPoolSize());
         DatagramSocket datagramSocket = new DatagramSocket(settings.getUdpPort());
         ServerSocket serverSocket = new ServerSocket();
+        tcpPort = serverSocket.getLocalPort();
         trListener = new TRListener<>(this, datagramSocket);
         tpListener = new TPListener<>(this, serverSocket);
         processor = new Processor<>(this);
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+    }
+
+    State<D> getState() {
+        return processor;
     }
 
     public void start() {

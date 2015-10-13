@@ -26,6 +26,12 @@ public class Application implements CommandLineRunner {
     @Autowired
     private JitterbugSettings jitterbugSettings;
 
+    public static void main(String[] args) throws Exception {
+        SpringApplication application = new SpringApplication(Application.class);
+        application.setApplicationContextClass(AnnotationConfigApplicationContext.class);
+        SpringApplication.run(Application.class, args);
+    }
+
     @Override
     public void run(String... args) throws IOException {
         if (jitterbugSettings.getNetworkInterface() == null) {
@@ -57,12 +63,6 @@ public class Application implements CommandLineRunner {
 //        System.out.println("Options:");
 //        System.out.println("--udp.iface={interface} \t\t\t network interface to use for UDP broadcasting");
 //        System.out.println("--udp.port={port} \t\t\t port to use for UDP broadcasting, defaults to 30041");
-    }
-
-    public static void main(String[] args) throws Exception {
-        SpringApplication application = new SpringApplication(Application.class);
-        application.setApplicationContextClass(AnnotationConfigApplicationContext.class);
-        SpringApplication.run(Application.class, args);
     }
 
 }

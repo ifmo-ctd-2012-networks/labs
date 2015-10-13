@@ -30,7 +30,7 @@ public class Jitterbug<D extends Data<D>> {
     }
 
     public synchronized void awaitTermination() throws InterruptedException {
-        if(context != null){
+        if (context != null) {
             context.wait();
         }
     }

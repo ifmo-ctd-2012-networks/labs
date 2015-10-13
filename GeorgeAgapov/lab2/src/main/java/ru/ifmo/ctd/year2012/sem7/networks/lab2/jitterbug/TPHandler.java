@@ -1,16 +1,28 @@
 package ru.ifmo.ctd.year2012.sem7.networks.lab2.jitterbug;
 
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.List;
 
-interface TPHandler {
-    void handleTP1(int tokenId, int nodeListHash);
+abstract class TPHandler {
 
-    void handleTP2();
+    public void handleTP1(int tokenId, int nodeListHash) throws IOException, ParseException {
+        throw new ParseException("TP1 message not expected: tokenId=" + tokenId + " nodeListHash=" + nodeListHash);
+    }
 
-    void handleTP3();
+    public void handleTP2() throws IOException, ParseException {
+        throw new ParseException("TP2 message not expected");
+    }
 
-    void handleTP4(List<Node> nodes);
+    public void handleTP3() throws IOException, ParseException {
+        throw new ParseException("TP3 message not expected");
+    }
 
-    void handleTP5(int tokenId, ObjectInputStream dataStream);
+    public void handleTP4(List<Node> nodes) throws IOException, ParseException {
+        throw new ParseException("TP4 message not expected");
+    }
+
+    public void handleTP5(int tokenId, ObjectInputStream dataStream) throws IOException, ParseException {
+        throw new ParseException("TP5 message not expected: tokenId=" + tokenId);
+    }
 }

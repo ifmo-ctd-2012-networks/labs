@@ -9,5 +9,4 @@ public class AppSettings {
     private static final Logger log = LoggerFactory.getLogger(AppSettings.class);
 
 
-
 }

@@ -20,13 +20,13 @@ class TPListener<D extends Data<D>> extends Thread {
     @Override
     public void run() {
         while (true) {
-            if(Thread.currentThread().isInterrupted()){
+            if (Thread.currentThread().isInterrupted()) {
                 Thread.interrupted();
                 break;
             }
             try {
                 Socket socket = serverSocket.accept();
-                context.getQueue().add(new TPReceivedEvent(socket));
+                context.getState().handleSocketConnection(socket);
             } catch (IOException e) {
                 log.warn("Exception caught while listening to socket", e);
             }
