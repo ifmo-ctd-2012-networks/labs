@@ -4,3 +4,6 @@
 [submodule "SkiporVladimir"]
 	path = SkiporVladimir
 	url = git@github.com:Skipor/networks_lab1.git
+[submodule "AgapovGeorge"]
+	path = AgapovGeorge
+	url = git@github.com:georgeee/itmo-7sem-networks.git
