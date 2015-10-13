@@ -201,13 +201,12 @@ In algo's description we widely used term "decision function". It's basically a 
  * for holding garantees, mentioned in preface (second group) this function should be pure, i.e. be dependent only on data provided
 
 ## Messages and variables
-  
-Each message < type, a, b, c, d >:
 
- * first byte contains version and type, four bits for each
- * rest of parts a, b, c, d are serialized to bytes and written in turn
+Message of each type starts with meta-information byte. It contains information about version and type encoded:
+  * `first_byte & 0xF` - version of protocol (lowest four bits)
+  * `first_byte & 0xF0` - type of message (highest four bits)
 
-Type constants:
+Type of message constants:
   
   * TR1 = 0
   * TR2 = 1
@@ -217,25 +216,46 @@ Type constants:
   * TP4 = 5
   * TP5 = 6
 
-Node list:
+Rest bytes of each message should be encoded in following format:
 
-  * 4-byte size of list
-  * nodes in format:
-     * 1-byte meta-info
-        * lowest bit, 0 - version of ip to use:
-          * 1 for IPv6
-          * 0 for IPv4
-        * rest of the bits, 1..7 are reserved for future use
-     * ip address
-        * 4 bytes for IPv4
-        * 16 bytes for IPv6
-     * port, 2 bytes
+  * TR1
+    1. token_id
+  * TR2
+    1. token_id
+  * TP1
+    1. token_id
+    2. node_list_hash
+  * TP2
+    1. < no data >
+  * TP3
+    1. < no data >
+  * TP4
+    1. node_list
+  * TP5
+    1. token_id
+    2. data
 
-Node list hash is a standard polynomial hash on base of 577.
+In above:
 
-token_id is a 4-byte integers, generated randomly (in *token_restore* procedure)
-
-Data is sent naturally, as byte sequence (prepended with 4-byte amount of bytes being sent).
+  * token_id - 4-byte integer. Meanfull token part (generated in *token_restore*) is stored in 31 bits, leadership is defined by sign:
+    * positive value if node is a leader (holds token)
+    * negative value otherwise
+  * node_list
+    * 4-byte size of list
+    * nodes in format:
+       * 1-byte meta-info
+          * lowest bit, 0 - version of ip to use:
+            * 1 for IPv6
+            * 0 for IPv4
+          * rest of the bits, 1..7 are reserved for future use
+       * ip address
+          * 4 bytes for IPv4
+          * 16 bytes for IPv6
+       * port, 2 bytes
+  * node_list_hash - 4-byte integer
+    * standard polynomial hash on base of 577 of node_list bytes
+  * data - data to send, application-provided array of bytes
+    * size of data isn't defined anyhow, it's up to application to handle it if needed
 
 ## Appendix A
 
