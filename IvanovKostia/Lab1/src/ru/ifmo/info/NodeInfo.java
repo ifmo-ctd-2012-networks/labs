@@ -14,7 +14,7 @@ public class NodeInfo implements Comparable<NodeInfo> {
         this.hostname = hostname;
     }
 
-    public MacAddress getMacAdress() {
+    public MacAddress getMacAddress() {
         return mac;
     }
 

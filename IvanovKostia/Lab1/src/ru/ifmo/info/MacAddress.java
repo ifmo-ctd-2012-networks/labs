@@ -1,6 +1,7 @@
 package ru.ifmo.info;
 
 import java.util.Arrays;
+import java.util.Random;
 
 public class MacAddress implements Comparable<MacAddress> {
     public static final int SIZE = 6;
@@ -11,6 +12,12 @@ public class MacAddress implements Comparable<MacAddress> {
         if (value.length != SIZE)
             throw new IllegalStateException(String.format("Accept only byte arrays of length %d, but %d was given", SIZE, value.length));
         this.value = value;
+    }
+
+    public static MacAddress random() {
+        byte[] bytes = new byte[SIZE];
+        new Random().nextBytes(bytes);
+        return new MacAddress(bytes);
     }
 
     @Override

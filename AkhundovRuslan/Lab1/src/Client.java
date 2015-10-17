@@ -25,15 +25,18 @@ public class Client implements Runnable {
             c.setBroadcast(true);
             while (!Thread.currentThread().isInterrupted()) {
 
-                byte[] receiveBuf = new byte[15000];
+                byte[] receiveBuf = new byte[1500];
                 DatagramPacket receivePacket = new DatagramPacket(receiveBuf, receiveBuf.length);
 
                 try {
                     c.receive(receivePacket);
-
-                    Packet packet = new Packet(receivePacket);
-                    queue.add(packet);
-//                    LOG.info(packet.toString());
+                    try {
+                        Packet packet = new Packet(receivePacket);
+                        queue.add(packet);
+//                        LOG.info(packet.toString());
+                    } catch (Exception e) {
+//                        LOG.log(Level.SEVERE, e.getMessage(), e);
+                    }
                 } catch (SocketTimeoutException e) {
                     LOG.info("Socket timeout");
                 } catch (IOException e) {

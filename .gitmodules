@@ -1,3 +1,12 @@
 [submodule "IsaevIlya"]
 	path = IsaevIlya
 	url = https://github.com/isae/networking-labs.git
+<<<<<<< HEAD
+=======
+[submodule "SkiporVladimir"]
+	path = SkiporVladimir
+	url = git@github.com:Skipor/networks_lab1.git
+[submodule "AgapovGeorge"]
+	path = AgapovGeorge
+	url = git@github.com:georgeee/itmo-7sem-networks.git
+>>>>>>> 4611b01103941820d0ff12903b043cdbeaaad476

@@ -8,17 +8,20 @@ public class Main {
     public static void main(String[] args) throws IOException {
         String networkInterfaceName = args[0];
         int port = Integer.parseInt(args[1]);
-
         NetworkInterface network = Optional.ofNullable(NetworkInterface.getByName(networkInterfaceName))
                 .orElseThrow(() -> new IllegalArgumentException("No such network found"));
 
         Thread stopWaiter = null;
         try {
-            BroadcastAnnouncer announcer = new BroadcastAnnouncer(port, 5_000L, network);
+            BroadcastAnnouncer announcer = new BroadcastAnnouncer(port, 5_000L);
+            announcer.addRepeatingTask(NiceSender.builder(network));
+            announcer.addRepeatingTask(ShadowSender.builder(10_000));
+//            announcer.addRepeatingTask(GeneratedInfoSender.builder(5));
+
             stopWaiter = new Thread(new StdinWaiter(announcer::close));
             stopWaiter.start();
 
-            announcer.run();
+            announcer.start().await();
             announcer.close();
         } finally {
             Optional.ofNullable(stopWaiter)

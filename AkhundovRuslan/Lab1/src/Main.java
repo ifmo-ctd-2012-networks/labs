@@ -9,12 +9,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class Main {
 
     public static void main(String[] args) throws SocketException, UnknownHostException, InterruptedException {
-        Server server = new Server(8080);
+        Server server = new Server(1234);
         Thread serverThread = new Thread(server);
 
         ConcurrentLinkedQueue<Packet> packetsQueue = new ConcurrentLinkedQueue<>();
 
-        Client client = new Client(8080, packetsQueue);
+        Client client = new Client(1234, packetsQueue);
         Thread threadClient = new Thread(client);
 
         Printer printer = new Printer(packetsQueue);

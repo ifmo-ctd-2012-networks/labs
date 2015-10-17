@@ -3,6 +3,7 @@ package ru.zyulyaev.ifmo.net.lab1;
 import java.net.DatagramPacket;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 
 /**
@@ -39,8 +40,9 @@ public class UdpMessage {
             byte[] hostnameBytes = new byte[hostnameLength];
             buffer.get(hostnameBytes);
             int timestamp = buffer.getInt();
-            return new UdpMessage(mac, new String(hostnameBytes, Charset.forName("UTF-8")), timestamp);
-        } catch (BufferUnderflowException ex) {
+            String hostname = Charset.forName("UTF-8").newDecoder().decode(ByteBuffer.wrap(hostnameBytes)).toString();
+            return new UdpMessage(mac, hostname, timestamp);
+        } catch (BufferUnderflowException | CharacterCodingException ex) {
             throw new MessageMalformed(ex);
         }
     }

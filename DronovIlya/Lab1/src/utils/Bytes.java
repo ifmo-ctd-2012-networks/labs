@@ -19,7 +19,7 @@ public class Bytes {
     }
 
     private static void checkBufferSize(ByteBuffer buffer, int size) throws ProtoException {
-        if (buffer.remaining() < size) {
+        if (buffer.remaining() < size || size < 0) {
             throw new ProtoException();
         }
     }

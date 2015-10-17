@@ -11,7 +11,9 @@ public class MacAddress implements Comparable<MacAddress> {
     private final byte[] mac;
 
     public MacAddress(byte[] mac) {
-        assert mac.length == LENGTH;
+        if (mac.length < LENGTH) {
+            throw new IllegalStateException("");
+        }
         this.mac = mac;
     }
 

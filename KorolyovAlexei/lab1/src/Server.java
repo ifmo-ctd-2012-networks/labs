@@ -76,8 +76,8 @@ public class Server implements Runnable {
     }
 
 
-    private long getTimestamp() {
-        return System.currentTimeMillis();
+    private int getTimestamp() {
+        return (int) (System.currentTimeMillis() / 1000);
     }
 
     private byte[] getHostName() {

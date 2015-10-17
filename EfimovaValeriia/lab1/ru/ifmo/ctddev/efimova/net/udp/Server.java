@@ -51,12 +51,18 @@ public class Server implements Runnable {
                 for (int i = MAC_LEN + 1, name_ind = 0; name_ind < hostname_len; i++, name_ind++) {
                     name[name_ind] = receiveData[i];
                 }
-                String n = new String(Arrays.copyOfRange(name, 0, hostname_len));
+                String n = "";
+                if (hostname_len > 0) {
+                    n = new String(Arrays.copyOfRange(name, 0, hostname_len));
+                }
 
                 // read timestamp
-                int ind = MAC_LEN + 1 + hostname_len;
-                ByteBuffer bbuf = ByteBuffer.wrap(receiveData, ind, 4);
-                int ts = bbuf.getInt();
+                int ts = 0;
+                if (hostname_len > 0) {
+                    int ind = MAC_LEN + 1 + hostname_len;
+                    ByteBuffer bbuf = ByteBuffer.wrap(receiveData, ind, 4);
+                    ts = bbuf.getInt();
+                }
 
                 Message msg = new Message(mac, n, ts);
                 incomingMessages.offer(msg);

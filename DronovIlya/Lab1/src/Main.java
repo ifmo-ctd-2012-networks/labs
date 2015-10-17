@@ -1,3 +1,4 @@
+import java.net.SocketException;
 import java.net.UnknownHostException;
 
 public class Main {
@@ -16,6 +17,8 @@ public class Main {
             client.start();
         } catch (UnknownHostException e) {
             System.out.println("Unknown host");
+        } catch (SocketException e) {
+            System.out.println("Socket exception");
         }
     }
 }

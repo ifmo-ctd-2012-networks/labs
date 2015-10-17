@@ -24,6 +24,19 @@
                     <source>${java.version}</source>
                 </configuration>
             </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>ru.zyulyaev.ifmo.net.lab1.Broadcaster</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

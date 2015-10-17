@@ -10,7 +10,7 @@ public class Packet {
 
     public final String macAddress;
     public final String hostName;
-    public final int timeStamp;
+    public final long timeStamp;
 
     public Packet(DatagramPacket packet) {
         byte[] response = packet.getData();
@@ -28,7 +28,10 @@ public class Packet {
         System.arraycopy(response, 7 + hostNameLength, timestampBytes, 0, 4);
 
         ByteBuffer buffer = ByteBuffer.wrap(timestampBytes);
-        timeStamp = buffer.getInt();
+        timeStamp = ((long) buffer.getInt()) * 1000L;
+        if (hostName.isEmpty()) throw new IllegalArgumentException("Hostname is empty");
+        if (timeStamp == 0 || timeStamp > System.currentTimeMillis() + 5000)
+            throw new IllegalArgumentException("Wrong timestamp " + hostName);
     }
 
     @Override

@@ -52,6 +52,17 @@ class Listener:
 
             return mac, hostname_len, hostname, timestamp
 
+        def check(buf):
+            if sys.getsizeof(buf) != 7:
+                return False
+
+            hostname_len = int.from_bytes(buf[6:7], Listener.BYTEORDER)
+
+            if sys.getsizeof(buf) < 7 + hostname_len:
+                return False
+
+            return True
+
         instances = {}
         counts = {}
 
@@ -60,9 +71,10 @@ class Listener:
                 while not self.queue.empty():
                     try:
                         buf, _ = self.queue.get()
-                        mac, hostname_len, hostname, timestamp = get_data(buf)
-                        instances[mac] = (hostname_len, hostname, timestamp)
-                        counts[mac] = -1
+                        if check(buf):
+                            mac, hostname_len, hostname, timestamp = get_data(buf)
+                            instances[mac] = (hostname_len, hostname, timestamp)
+                            counts[mac] = -1
                     finally:
                         self.queue.task_done()
 
