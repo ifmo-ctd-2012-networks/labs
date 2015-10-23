@@ -53,23 +53,21 @@ priority(t Token) = [~progress,authorMAC, authorTokenNum]
     * Message specific data: [token::Token]
     * отсылается GENERATING_STATEом, тому кто прислал GENERATING_TOKEN_MESSAGE с большим priority и броадкастом, когда переходим в LOOSER_STATE_STATE
 
-###Node State
-state :: StateENUM
-ringMembers :: SortedVector<(mac, ip)>  // all ring members. 
-ringMembersHash :: uint64 // hash in fixed cross-platform algorithm
-heardAboutToken :: uint64 (timestamp nanos)
-currentMyTokenNumber :: uint32
+* Node State
+  * state :: StateENUM
+  * ringMembers :: SortedVector<(mac, ip)>  // all ring members. 
+  * ringMembersHash :: uint64 // hash in fixed cross-platform algorithm
+  * heardAboutToken :: uint64 (timestamp nanos)
+  * currentMyTokenNumber :: uint32
 
-###Protocol constants
-HEART_BEAT_PERIOD :: uint64 (nanos)
-WAITER_SLEEP_INTERVALS :: uint32
-WAITER_TIMEOUT = HEART_BEAT_PERIOD * WAITER_SLEEP_INTERVALS :: nanos
-LOOSER_SLEEP_INTERVALS = WAITER_STATE_SLEEP_INTERVALS/2
-LOOSER_TIMEOUT = HEART_BEAT_PERIOD * LOOSER_SLEEP_INTERVALS :: nanos
-LOOSER_ANSWER_INTERVALS  :: uint32
-LOOSER_ANSWER_TIMEOUT = HEART_BEAT_PERIOD * LOOSER_ANSWER_INTERVALS :: nanos
-
-
+* Protocol constants
+  * HEART_BEAT_PERIOD :: uint64 (nanos)
+  * WAITER_SLEEP_INTERVALS :: uint32
+  * WAITER_TIMEOUT = HEART_BEAT_PERIOD * WAITER_SLEEP_INTERVALS :: nanos
+  * LOOSER_SLEEP_INTERVALS = WAITER_STATE_SLEEP_INTERVALS/2
+  * LOOSER_TIMEOUT = HEART_BEAT_PERIOD * LOOSER_SLEEP_INTERVALS :: nanos
+  * LOOSER_ANSWER_INTERVALS  :: uint32
+  * LOOSER_ANSWER_TIMEOUT = HEART_BEAT_PERIOD * LOOSER_ANSWER_INTERVALS :: nanos
 
 #### Bellow is deprecated information, but it can contain some unique details, and more abstract picture.
 ##### naming is deprecated, but andestandable
