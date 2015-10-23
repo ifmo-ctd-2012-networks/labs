@@ -1,9 +1,8 @@
 #Lab2 <protocol_name> Protocol
 
-###Token 
-Token = [progress :: uint64, authorMAC :: [6]byte, authorTokenNum :: uint32]
+*Token* = [progress :: uint64, authorMAC :: [6]byte, authorTokenNum :: uint32]
 priority(t Token) = [~progress,authorMAC, authorTokenNum]
-###### progress is always increasing megure of progress. If there is no megure of progress in algorithm, timestamp in nanos is used as progress
+*_progress is always increasing megure of progress. If there is no megure of progress in algorithm, timestamp in nanos is used as progress_*
 
 ##### Any message format [messageKind :: uint8, reserved :: uint8 (0x00 default), messageAuthorMAC :: [6]byte, message kind specific data ...]
 
