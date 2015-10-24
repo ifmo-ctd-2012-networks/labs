@@ -14,15 +14,15 @@ priority(t Token) = [~progress,authorMAC, authorTokenNum]
   * WAITER_STATE
     * Waiting for token. 
     * Node that heard about token (received TOKEN_IS_HERE_MESSAGE message) earlier than WAITER_STATE_TIMEOUT before current moment
-    * On WAITER_STATE_TIMEOUT 
+    * On WAITER_TIMEOUT 
       * Broadcasts WHERE_IS_TOKEN_MESSAGE
       * Change state to LOOSER_STATE
   * LOOSER_STATE
     * Node that loose token.
     * Node that doesn't heard about token (received TOKEN_IS_HERE_MESSAGE message) earlier than WAITER_STATE_TIMEOUT before current moment
-    * Every LOOSER_STATE_TIMEOUT
+    * Every LOOSER_ASK_TIMEOUT
       * Broadcasts WHERE_IS_TOKEN_MESSAGE
-      * Waits for TOKEN_WAS_HERE_MESSAGE_RECENTLY_MESSAGE
+      * Waits TOKEN_WAS_HERE_MESSAGE_RECENTLY_MESSAGE for LOOSER_ANSWER_TIMEOUT
         * On receive continue be LOOSER_STATE till next timeout
         * Else Broadcasts
     * If gets GENERATING_TOKEN_MESSAGE, checks if own tokenCandidate priority lower, than reply and broadcast GENERATING_TOKEN_STATE, and became generating
@@ -59,14 +59,17 @@ priority(t Token) = [~progress,authorMAC, authorTokenNum]
   * heardAboutToken :: uint64 (timestamp nanos)
   * currentMyTokenNumber :: uint32
 
-* Protocol constants
+* Protocol constants //constants values may vary
   * HEART_BEAT_PERIOD :: uint64 (nanos)
   * WAITER_SLEEP_INTERVALS :: uint32
   * WAITER_TIMEOUT = HEART_BEAT_PERIOD * WAITER_SLEEP_INTERVALS :: nanos
-  * LOOSER_SLEEP_INTERVALS = WAITER_STATE_SLEEP_INTERVALS/2
-  * LOOSER_TIMEOUT = HEART_BEAT_PERIOD * LOOSER_SLEEP_INTERVALS :: nanos
-  * LOOSER_ANSWER_INTERVALS  :: uint32
-  * LOOSER_ANSWER_TIMEOUT = HEART_BEAT_PERIOD * LOOSER_ANSWER_INTERVALS :: nanos
+  * LOOSER_ASK_INTERVALS = WAITER_STATE_SLEEP_INTERVALS/2
+  * LOOSER_ASK_TIMEOUT = HEART_BEAT_PERIOD * LOOSER_ASK_INTERVALS :: nanos
+  * LOOSER_ANSWER_INTERVALS  = LOOSER_ASK_INERVALS * 2:: uint32
+  * LOOSER_ANSWER_TIMEOUT = HEART_BEAT_PERIOD * LOOSER_ASK_INTERVALS :: nanos //LOOSER_ANSWER_TIMEOUT > LOOSER_ASK_TIMEOUT
+
+  * GENERATING_INTERVALS  :: uint32
+  * GENERATING_TIMEOUT = HEART_BEAT_PERIOD * GENERATING_INTERVALS :: nanos 
 
 #### Bellow is deprecated information, but it can contain some unique details, and more abstract picture.
 ##### naming is deprecated, but andestandable
