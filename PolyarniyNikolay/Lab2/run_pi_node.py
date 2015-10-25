@@ -76,12 +76,12 @@ if __name__ == '__main__':
 
     args = sys.argv
     if len(args) > 3:
-        print('Usage: [hostname] [interface]\n')
+        print('Usage: [interface] [hostname]\n')
     else:
         hostname, interface_name = None, None
         if len(args) >= 2:
-            hostname = args[1]
+            interface_name = args[1]
         if len(args) >= 3:
-            interface_name = args[2]
+            hostname = args[2]
 
         main(hostname, interface_name)
