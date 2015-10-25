@@ -168,8 +168,15 @@ class Messenger:
             host = address[0]
             self._nodes[node_id] = host
             self._logger.info('New node: {} at {}! (total number: {})'.format(node_id, host, len(self._nodes)))
-            yield from self.send_message(node_id, Message(MessageType.PING, self._node_id))
+            yield from self.send_message(node_id, Message(MessageType.PING, self.node_id))
 
+        if message.type == MessageType.TAKE_TOKEN:
+            for node_id, host in message.nodes.items():
+                if node_id not in self.nodes:
+                    self.nodes[node_id] = host
+                    self._logger.info('New node: {} at {}! (total number: {})'.format(node_id, host, len(self._nodes)))
+                else:
+                    assert host == self.nodes[node_id]
 
     @asyncio.coroutine
     def listen_message(self):
@@ -209,7 +216,7 @@ class Messenger:
 
     @property
     def node_id(self):
-        return self._node_id or self._mac
+        return str(self._node_id or self._mac)
 
     @property
     def nodes(self):
