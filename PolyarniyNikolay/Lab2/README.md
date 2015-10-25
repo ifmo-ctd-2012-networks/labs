@@ -1,3 +1,7 @@
+Описание протокола: https://github.com/ifmo-ctd-2012-networks/labs/tree/master/SkiporVladimir/lab2
+
+Схема стейт-машины: https://github.com/ifmo-ctd-2012-networks/labs/blob/master/SkiporVladimir/lab2/Protocol_state_machine.pdf
+
 ##### 1. Token https://github.com/ifmo-ctd-2012-networks/labs/blob/master/PolyarniyNikolay/Lab2/src/task2/entity/token.py
 Token:
  - progress - как далеко зашел прогресс
