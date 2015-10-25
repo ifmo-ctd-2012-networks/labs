@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-sudo apt-get update
-sudo apt-get install python3.4
-sudo apt-get install pip3
-pip3 install -e .
-run_pi_node
+sudo apt-get install python3.4 python3-pip
+pip3 install -e /vagrant/
+python3 /vagrant/run_pi_node.py
