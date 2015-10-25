@@ -87,6 +87,10 @@ class TakeTokenMessage(MessageWithToken):
     def data(self):
         return self._data
 
+    @property
+    def nodes(self):
+        return self._nodes
+
     def __getstate__(self):
         state = super(TakeTokenMessage, self).__getstate__()
         state.update({
