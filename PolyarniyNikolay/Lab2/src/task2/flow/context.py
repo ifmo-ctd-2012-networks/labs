@@ -1,0 +1,122 @@
+__author__ = "Polyarnyi Nickolay"
+
+import asyncio
+import logging
+from abc import abstractmethod, ABCMeta
+
+from task2.entity.token import Token
+from task2.entity.consts import Const
+from task2.entity.messages import MessageType, Message, MESSAGES_TYPES_WITH_TOKEN, TakeTokenMessage, MessageWithToken
+from task2.flow.messenger import Messenger
+
+
+logger = logging.getLogger(__name__)
+
+
+class Context:
+
+    def __init__(self, state, const: Const, messenger: Messenger):
+        self._state = state
+        self._const = const
+        self._messenger = messenger
+
+        self._data = ''
+        self._generated_tokens_revision = 1
+        self._given_token = None
+
+    def _construct_message(self, message_type) -> Message:
+        if message_type == MessageType.TAKE_TOKEN:
+            return TakeTokenMessage(self.node_id, self.current_token, self._messenger.nodes, self._data)
+        elif message_type in MESSAGES_TYPES_WITH_TOKEN:
+            return MessageWithToken(message_type, self.node_id, self.current_token)
+        else:
+            return Message(message_type, self.node_id)
+
+    def increase_generated_tokens_revision(self):
+        self._generated_tokens_revision += 1
+
+    def update_token(self, token: Token, data):
+        if token.priority() > self.current_token.priority():
+            logger.info('Token updated from {} to {}.'.format(self.current_token, token))
+            self._given_token = token
+            logger.info('Changing data from {} to {}. (len: {}->{})'.format(self._data, data, len(self._data), len(data)))
+            self._data = data
+            return True
+        else:
+            return False
+
+    @asyncio.coroutine
+    def listen_message(self):
+        return (yield from self._messenger.listen_message())
+
+    @asyncio.coroutine
+    def send_broadcast(self, message_type: MessageType):
+        message = self._construct_message(message_type)
+        yield from self._messenger.send_broadcast(message)
+
+    def send_response(self, income_message: Message, response_type: MessageType):
+        response_message = self._construct_message(response_type)
+        yield from self._messenger.send_message(income_message.author_node_id, response_message)
+
+    def send_message_to_next(self, message_type: MessageType):
+        nodes = sorted(self._messenger.nodes.keys())
+        next_node_id = nodes[(nodes.index(self.node_id) + 1) % len(nodes)]
+        message = self._construct_message(message_type)
+        yield from self._messenger.send_message(next_node_id, message)
+
+    @asyncio.coroutine
+    def calculate(self):
+        yield from asyncio.sleep(2.0)
+        pi_data = '3,1415926535897932384626433832795028841971693993751058209749'
+        if len(self._data) == len(pi_data):
+            self._data += '239'[(len(self._data) - len(pi_data)) % 3]
+        else:
+            self._data = pi_data[:len(self._data) + 1]
+
+    @property
+    def node_id(self):
+        return self._messenger.node_id
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state):
+        logger.info('State: {} -> {}.'.format(None if self.state is None else self.state.get_state_name(), state.get_state_name()))
+        self._state = state
+
+    @property
+    def const(self):
+        return self._const
+
+    @property
+    def current_token(self) -> Token:
+        if self._given_token is None:
+            return Token(len(self._data), self.node_id, self._generated_tokens_revision)
+        else:
+            return self._given_token
+
+
+class State:
+
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        self._messages = asyncio.Queue()
+        self._logger = logging.getLogger(self.__class__.__name__)
+
+    @abstractmethod
+    @asyncio.coroutine
+    def execute(self, context: Context):
+        pass
+
+    @asyncio.coroutine
+    def _read_message(self, context: Context):
+        return (yield from context.listen_message())
+
+    def on_message(self, message: Message):
+        self._messages.put_nowait(message)
+
+    def get_state_name(self):
+        return self.__class__.__name__
