@@ -2,6 +2,12 @@
 
 Схема стейт-машины: https://github.com/ifmo-ctd-2012-networks/labs/blob/master/SkiporVladimir/lab2/Protocol_state_machine.pdf
 
+
+##### 0. Общие штуки
+`__getstate__` и `__setstate__` - методы нужные для сериализации (представление ввиде `dict` (считай `Map` в питоне), которые легко сериализовать и отправить с помощью *JSON*)
+
+`yield from` - ключевое слово питоновского *asyncio* (на самом деле не только его, но в этом проекте только в таком смысле используется), это асинхронный вызов, что-то вроде "исполняй этот метод, а когда он исполниться, пусть основной поток сюда вернется и продолжит исполнение"
+
 ##### 1. Token https://github.com/ifmo-ctd-2012-networks/labs/blob/master/PolyarniyNikolay/Lab2/src/task2/entity/token.py
 Token:
  - progress - как далеко зашел прогресс
