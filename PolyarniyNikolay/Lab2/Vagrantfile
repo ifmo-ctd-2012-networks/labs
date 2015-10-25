@@ -1,0 +1,19 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = '2'
+
+Vagrant.require_version '>= 1.5.4'
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.define 'lab2'
+
+  config.vm.box = 'ubuntu/trusty64'
+
+  config.vm.provider 'virtualbox' do |v|
+    v.memory = 1024
+  end
+  config.vm.network "public_network", ip: "192.168.0.50", bridge: "en0: Wi-Fi (AirPort)"
+
+end
+
