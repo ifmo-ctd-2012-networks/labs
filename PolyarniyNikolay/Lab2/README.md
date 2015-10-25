@@ -3,6 +3,13 @@
 Схема стейт-машины: https://github.com/ifmo-ctd-2012-networks/labs/blob/master/SkiporVladimir/lab2/Protocol_state_machine.pdf
 
 
+##### Vagrant
+* Для запуска сконфигурированных виртуальных машин нужно:
+  * [Установить свежий Vagrant] (https://www.vagrantup.com/downloads.html)
+  * Перейти в корне проекта: *vagrant up*
+Для подключения к нужной машине используйте *vagrant ssh* (Для дефолтной) или *vagrant ssh <machine name>* 
+
+
 ##### 0. Общие штуки
 `__getstate__` и `__setstate__` - методы нужные для сериализации (представление ввиде `dict` (считай `Map` в питоне), которые легко сериализовать и отправить с помощью *JSON*)
 
