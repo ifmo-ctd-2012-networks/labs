@@ -7,23 +7,29 @@ Vagrant.require_version '>= 1.5.4'
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #config.vm.define 'lab2'
-
+  
+  # use preconfigured box to start mach faster
   config.vm.box = 'https://dl.dropboxusercontent.com/u/102236368/lab2-1.0.box'
 
   config.vm.provider 'virtualbox' do |v|
-    v.memory = 1024
+    v.memory = 512
   end
 
-  #config.vm.provision :shell, path: "install.sh" # build in into box from yadisk
+  #config.vm.provision :shell, path: "install.sh" # build in into box
 
-  (10..13).each do |i|
+  (10 .. 12).each do |i|
     config.vm.define "node-#{i}" do |node|
-    config.vm.network "public_network", ip: "192.168.0.1#{i}", bridge: "en0: Wi-Fi (AirPort)"
+      node.vm.network "public_network", ip: "192.168.0.1#{i}", bridge: "en0: Wi-Fi (AirPort)"
+      node.vm.hostname = "node-#{i}"
+
       node.vm.provision "shell",
-        inline: "echo hello from node #{i}"
-      node.vm.provision :shell, path: "run.sh"
+        inline: "echo hello from node-#{i}"
+      node.vm.provision :shell,  
+        path: "run.sh"
+      #, run: "always"
     end
   end
+
 
 end
 
