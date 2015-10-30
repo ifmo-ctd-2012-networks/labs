@@ -14,36 +14,36 @@ public class Node {
     private boolean active;
     private long timestamp;
 
-    public void setMacAddress(String macAddress) {
-        this.macAddress = macAddress;
-    }
-
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
+    public InetAddress getAddress() {
+        return address;
     }
 
     public void setAddress(InetAddress address) {
         this.address = address;
     }
 
-    public InetAddress getAddress() {
-        return address;
-    }
-
     public String getMacAddress() {
         return macAddress;
+    }
+
+    public void setMacAddress(String macAddress) {
+        this.macAddress = macAddress;
     }
 
     public int getPort() {
         return port;
     }
 
+    public void setPort(int port) {
+        this.port = port;
+    }
+
     public String getHostname() {
         return hostname;
+    }
+
+    public void setHostname(String hostname) {
+        this.hostname = hostname;
     }
 
     public InetSocketAddress getInetSocketAddress() {

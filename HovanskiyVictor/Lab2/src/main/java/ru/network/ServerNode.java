@@ -13,18 +13,16 @@ import java.util.TimerTask;
  * @author victor
  */
 public class ServerNode extends Node implements Runnable {
-    private final Logger log = LoggerFactory.getLogger(ServerNode.class);
-
+    private static final Logger log = LoggerFactory.getLogger(ServerNode.class);
+    private final Ring ring = new Ring(this);
     private ApplicationLayer applicationLayer;
     private NodeStatus status;
     private String token;
-    private String data;
+    private String data = "";
     private long operationNumber;
     private StateLog stateLog = new StateLog();
-
     private State state;
     private Looper looper;
-    private final Ring ring = new Ring(this);
 
     public ServerNode(String hostname, int port) {
         this.hostname = hostname;
@@ -32,17 +30,17 @@ public class ServerNode extends Node implements Runnable {
     }
 
     public static void main(String[] args) {
+        if (args.length < 2) {
+            log.error("Usage: hostname port");
+            System.exit(-1);
+        }
         String hostname = args[0];
         int port = Integer.parseInt(args[1]);
-        new Thread(new ServerNode(hostname, port), "main").start();
-    }
-
-    public void setState(State state) {
-        if (this.state != null) {
-            this.state.leave();
+        if (port < 1024) {
+            log.error("Номер порта должен быть > 1024");
+            System.exit(-1);
         }
-        this.state = state;
-        this.state.enter();
+        new Thread(new ServerNode(hostname, port), "main").start();
     }
 
     @Override
@@ -75,12 +73,20 @@ public class ServerNode extends Node implements Runnable {
         return status;
     }
 
+    public void setStatus(NodeStatus status) {
+        this.status = status;
+    }
+
     public State getState() {
         return state;
     }
 
-    public void setStatus(NodeStatus status) {
-        this.status = status;
+    public void setState(State state) {
+        if (this.state != null) {
+            this.state.leave();
+        }
+        this.state = state;
+        this.state.enter();
     }
 
     public long getOperationNumber() {

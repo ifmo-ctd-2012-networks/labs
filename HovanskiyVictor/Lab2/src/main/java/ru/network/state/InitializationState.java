@@ -3,7 +3,8 @@ package ru.network.state;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.network.ServerNode;
-import ru.network.message.*;
+import ru.network.message.GetIdentityMessage;
+import ru.network.message.SendIdentityMessage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,8 +13,8 @@ import java.util.List;
  * @author victor
  */
 public class InitializationState extends State {
-    private final Logger log = LoggerFactory.getLogger(InitializationState.class);
     private static final long IDENTITY_TIMEOUT = 5000;
+    private final Logger log = LoggerFactory.getLogger(InitializationState.class);
     private long previous;
     private boolean listenIdentities;
 
@@ -41,7 +42,6 @@ public class InitializationState extends State {
                 log.debug("Добавляем в кольцо " + message.getSender());
                 node.getRing().put(message.getSender());
             }
-
 
 
             node.setState(new RecoveryState(node));

@@ -13,28 +13,14 @@ import java.io.StringReader;
  * @author victor
  */
 public abstract class Message {
-    private Node sender;
-
-    public Node getSender() {
-        return sender;
-    }
-
     private static final String MESSAGE_TYPE = "type";
     private static final String MESSAGE_CONTENT = "content";
-
     private final String type;
+    private Node sender;
 
     public Message(Node sender, String type) {
         this.sender = sender;
         this.type = type;
-    }
-
-    public void setSender(Node sender) {
-        this.sender = sender;
-    }
-
-    public String getType() {
-        return type;
     }
 
     public static JsonObject encode(Message message) {
@@ -48,10 +34,6 @@ public abstract class Message {
         JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
         JsonObject jsonObject = jsonReader.readObject();
         return decode(sender, jsonObject);
-    }
-
-    public void delegate(ServerNode node) {
-
     }
 
     public static Message decode(Node sender, JsonObject jsonObject) {
@@ -81,6 +63,22 @@ public abstract class Message {
                 return new ReceivedTokenMessage(sender, content);
         }
         throw new IllegalArgumentException("Unknown message type: \"" + type + "\"");
+    }
+
+    public Node getSender() {
+        return sender;
+    }
+
+    public void setSender(Node sender) {
+        this.sender = sender;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void delegate(ServerNode node) {
+
     }
 
     protected abstract JsonObject encode();

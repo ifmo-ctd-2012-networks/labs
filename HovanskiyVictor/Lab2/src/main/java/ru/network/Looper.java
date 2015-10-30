@@ -13,6 +13,11 @@ public class Looper {
     final LinkedBlockingQueue<Runnable> mQueue;
     final Thread mThread;
 
+    private Looper(boolean quitAllowed) {
+        mQueue = new LinkedBlockingQueue<>();
+        mThread = Thread.currentThread();
+    }
+
     private static void prepare(boolean quitAllowed) {
         if (sThreadLocal.get() != null) {
             throw new RuntimeException("Only one Looper may be created per thread");
@@ -51,10 +56,6 @@ public class Looper {
         }
     }
 
-    public void add(Runnable runnable) {
-        mQueue.add(runnable);
-    }
-
     public static Looper myLooper() {
         return sThreadLocal.get();
     }
@@ -67,9 +68,8 @@ public class Looper {
         prepare(true);
     }
 
-    private Looper(boolean quitAllowed) {
-        mQueue = new LinkedBlockingQueue<>();
-        mThread = Thread.currentThread();
+    public void add(Runnable runnable) {
+        mQueue.add(runnable);
     }
 
     public boolean isCurrentThread() {

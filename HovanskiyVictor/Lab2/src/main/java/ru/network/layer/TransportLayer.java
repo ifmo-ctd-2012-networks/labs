@@ -19,14 +19,35 @@ import java.util.function.BiConsumer;
  * @author victor
  */
 public class TransportLayer {
-    private final Logger log = LoggerFactory.getLogger(TransportLayer.class);
     private final static int PACKET_LENGTH = 1024;
+    private final Logger log = LoggerFactory.getLogger(TransportLayer.class);
     private InetAddress inetAddress;
     private MacAddress macAddress;
     private ClientSender clientSender;
     private Broadcaster broadcaster;
     private Map<Integer, Runnable> receivers = new HashMap<>();
     private AtomicBoolean running = new AtomicBoolean(false);
+
+    private static List<Pair<byte[], InetAddress>> getBroadcast() {
+        List<Pair<byte[], InetAddress>> list = new ArrayList<>();
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = interfaces.nextElement();
+                if (networkInterface.getHardwareAddress() != null) {
+                    for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
+                        InetAddress address = interfaceAddress.getBroadcast();
+                        if (address != null) {
+                            list.add(new Pair<>(networkInterface.getHardwareAddress(), address));
+                        }
+                    }
+                }
+            }
+            return list;
+        } catch (SocketException e) {
+            return Collections.emptyList();
+        }
+    }
 
     public boolean connect() {
         if (running.compareAndSet(false, true)) {
@@ -55,27 +76,6 @@ public class TransportLayer {
         broadcaster.send(inetSocketAddress, message);
     }
 
-    private static List<Pair<byte[], InetAddress>> getBroadcast() {
-        List<Pair<byte[], InetAddress>> list = new ArrayList<>();
-        try {
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            while (interfaces.hasMoreElements()) {
-                NetworkInterface networkInterface = interfaces.nextElement();
-                if (networkInterface.getHardwareAddress() != null) {
-                    for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
-                        InetAddress address = interfaceAddress.getBroadcast();
-                        if (address != null) {
-                            list.add(new Pair<>(networkInterface.getHardwareAddress(), address));
-                        }
-                    }
-                }
-            }
-            return list;
-        } catch (SocketException e) {
-            return Collections.emptyList();
-        }
-    }
-
     protected void bind(int port, BiConsumer<InetAddress, String> listener, boolean broadcast) {
         assert !receivers.containsKey(port);
         if (broadcast) {
@@ -100,6 +100,7 @@ public class TransportLayer {
     private class ClientSender implements Runnable {
 
         private final LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
+
         @Override
         public void run() {
             while (running.get()) {
@@ -135,6 +136,7 @@ public class TransportLayer {
     private class Broadcaster implements Runnable {
 
         private final LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
+
         @Override
         public void run() {
             while (running.get()) {

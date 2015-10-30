@@ -3,13 +3,12 @@ package ru.network.state;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.network.CalculationService;
 import ru.network.Node;
 import ru.network.ServerNode;
 import ru.network.message.ReceivedTokenMessage;
 import ru.network.message.SendTokenMessage;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,9 +17,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author victor
  */
 public class ExecutingState extends State {
-    private final Logger log = LoggerFactory.getLogger(ExecutingState.class);
     private static final Executor executor = Executors.newSingleThreadExecutor();
-    private static final long RECIEVED_TIMEOUT = 5000;
+    private static final long RECEIVED_TIMEOUT = 3000;
+    private static final int NUMBERS_COUNT = 5;
+    private final Logger log = LoggerFactory.getLogger(ExecutingState.class);
     private long previous;
     private AtomicBoolean updated = new AtomicBoolean(false);
     private volatile String dataStamp;
@@ -37,6 +37,7 @@ public class ExecutingState extends State {
         long timestamp = System.currentTimeMillis();
         if (updated.compareAndSet(true, false)) {
             node.setData(dataStamp);
+            log.info("PI = " + node.getData());
             node.setOperationNumber(node.getOperationNumber() + 1);
             Node next = node.getRing().right();
             if (next == null) {
@@ -48,8 +49,8 @@ public class ExecutingState extends State {
                 previous = System.currentTimeMillis();
                 node.getApplicationLayer().send(next, new SendTokenMessage(node, node.getOperationNumber(), node.getToken(), node.getData()));
             }
-        } else if (listenReceivedToken && timestamp - previous >= RECIEVED_TIMEOUT) {
-            log.debug("Время ожидания " + RECIEVED_TIMEOUT + "ms истекло");
+        } else if (listenReceivedToken && timestamp - previous >= RECEIVED_TIMEOUT) {
+            log.debug("Время ожидания " + RECEIVED_TIMEOUT + "ms истекло");
             listenReceivedToken = false;
             log.debug("Токен не удалось передать");
             node.setState(new ExecutingState(node));
@@ -60,15 +61,13 @@ public class ExecutingState extends State {
     public void enter() {
         log.debug("enter");
         dataStamp = node.getData();
+        assert dataStamp != null;
         executor.execute(() -> {
-            log.debug("Вычисляем следующие 20 цифр числа PI...");
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            dataStamp = dataStamp + "0";
+            String temp = dataStamp;
+            log.debug("Вычисляем следующие " + NUMBERS_COUNT + " цифр числа PI...");
+            temp += CalculationService.instance().nextNumbers(temp.length(), NUMBERS_COUNT);
             log.debug("Готово");
+            dataStamp = temp;
             updated.set(true);
         });
     }
@@ -94,11 +93,13 @@ public class ExecutingState extends State {
     @Override
     public void handleReceivedToken(ReceivedTokenMessage message) {
         if (listenReceivedToken) {
-            assert receivedTokenMessage == null;
-            receivedTokenMessage = message;
-            log.debug("Токен удалось передать");
-            node.setToken(null);
-            node.setState(new NormalState(node));
+            if (message.getToken().equals(node.getToken())) {
+                assert receivedTokenMessage == null;
+                receivedTokenMessage = message;
+                log.debug("Токен удалось передать");
+                node.setToken(null);
+                node.setState(new NormalState(node));
+            }
         }
     }
 }

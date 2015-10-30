@@ -12,10 +12,10 @@ import ru.network.message.*;
  * @author victor
  */
 public abstract class State {
-    private final Logger log = LoggerFactory.getLogger(State.class);
+    private static final long PONG_TIMEOUT = 3000;
     protected final Looper looper;
     protected final ServerNode node;
-    private static final long PONG_TIMEOUT = 3000;
+    private final Logger log = LoggerFactory.getLogger(State.class);
     private long previousPing;
 
     public State(ServerNode node) {
@@ -53,6 +53,7 @@ public abstract class State {
 
     /**
      * Получили пинг-сообщение, обязаны на него ответить
+     *
      * @param message пинг-сообщение
      */
     public void handlePing(PingMessage message) {
@@ -61,6 +62,7 @@ public abstract class State {
 
     /**
      * Обновляем узел, пославший нам сообщение, как активный
+     *
      * @param message ответ на пинг
      */
     public void handlePong(PongMessage message) {
@@ -69,6 +71,7 @@ public abstract class State {
 
     /**
      * Текущий узел получил сообщение о передаче токена
+     *
      * @param message сообщение с токеном
      */
     public void handleSendToken(SendTokenMessage message) {
@@ -77,6 +80,7 @@ public abstract class State {
 
     /**
      * Текущий узел получил запрос по предоставлению всей информации о текущем узле
+     *
      * @param message запрос
      */
     public void handleGetIdentity(GetIdentityMessage message) {

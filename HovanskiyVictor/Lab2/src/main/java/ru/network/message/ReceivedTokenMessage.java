@@ -24,6 +24,10 @@ public class ReceivedTokenMessage extends Message {
         this.token = content.getString(TOKEN);
     }
 
+    public String getToken() {
+        return token;
+    }
+
     @Override
     public void delegate(ServerNode node) {
         node.getState().handleReceivedToken(this);

@@ -2,11 +2,9 @@ package ru.network.state;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.network.Node;
 import ru.network.ServerNode;
 import ru.network.message.ReceivedTokenMessage;
 import ru.network.message.SendTokenMessage;
-import ru.network.message.StartViewChangeMessage;
 
 /**
  * @author victor

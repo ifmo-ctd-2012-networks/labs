@@ -46,7 +46,7 @@ public class Ring {
         if (entry != null) {
             return entry.getValue();
         }
-        entry =  nodes.firstEntry();
+        entry = nodes.firstEntry();
         if (entry == null) {
             return null;
         }

@@ -13,8 +13,8 @@ import java.util.List;
  * @author victor
  */
 public class RecoveryState extends State {
-    private final Logger log = LoggerFactory.getLogger(RecoveryState.class);
     private static final long RECOVERY_RESPONSE_TIMEOUT = 2000;
+    private final Logger log = LoggerFactory.getLogger(RecoveryState.class);
     private long previous;
     private boolean listenRecoveryResponces;
     private List<RecoveryResponseMessage> recoveryResponses = new ArrayList<>();

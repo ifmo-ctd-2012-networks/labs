@@ -13,8 +13,8 @@ import java.net.InetSocketAddress;
  * @author victor
  */
 public class ApplicationLayer extends TransportLayer {
-    private final Logger log = LoggerFactory.getLogger(ApplicationLayer.class);
     public final static int BROADCAST_PORT = 1111;
+    private final Logger log = LoggerFactory.getLogger(ApplicationLayer.class);
     private final ServerNode node;
     private final Looper looper;
 

@@ -15,8 +15,8 @@ import java.util.List;
  * @author victor
  */
 public class ViewChangingState extends State {
-    private final Logger log = LoggerFactory.getLogger(ViewChangingState.class);
     private static final long VIEW_CHANGE_TIMEOUT = 2000;
+    private final Logger log = LoggerFactory.getLogger(ViewChangingState.class);
     private long previous;
     private boolean listenViewChanges;
     private List<DoViewChangeMessage> doViewChangeMessages = new ArrayList<>();
