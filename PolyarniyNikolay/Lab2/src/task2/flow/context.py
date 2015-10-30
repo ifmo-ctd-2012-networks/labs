@@ -46,8 +46,8 @@ class Context:
             return False
 
     @asyncio.coroutine
-    def listen_message(self):
-        return (yield from self._messenger.listen_message())
+    def take_message(self):
+        return (yield from self._messenger.take_message())
 
     @asyncio.coroutine
     def send_broadcast(self, message_type: MessageType):
@@ -112,8 +112,8 @@ class State:
         pass
 
     @asyncio.coroutine
-    def _read_message(self, context: Context):
-        return (yield from context.listen_message())
+    def _take_message(self, context: Context):
+        return (yield from context.take_message())
 
     def on_message(self, message: Message):
         self._messages.put_nowait(message)

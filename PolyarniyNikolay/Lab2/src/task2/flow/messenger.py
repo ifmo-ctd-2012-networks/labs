@@ -134,12 +134,18 @@ class Messenger:
         self._broadcast_listening = None
         self._tcp_listening = None
 
+        self._daemon = None
+        self._message_queue = asyncio.Queue()
+
         self._logger = logging.getLogger('Messenger')
 
     def start(self):
         self._tcp_messenger.start()
+        self._daemon = asyncio.async(self._listen_messages_loop())
 
     def stop(self):
+        if self._daemon is not None:
+            self._daemon.cancel()
         if self._broadcast_listening is not None:
             self._broadcast_listening.cancel()
         if self._tcp_listening is not None:
@@ -179,7 +185,7 @@ class Messenger:
                     assert host == self.nodes[node_id]
 
     @asyncio.coroutine
-    def listen_message(self):
+    def _listen_messages_loop(self):
 
         @asyncio.coroutine
         def listen_message(listen_message, channel):
@@ -193,14 +199,22 @@ class Messenger:
         self._tcp_listening = self._tcp_listening or asyncio.async(
             listen_message(self._tcp_messenger.listen_message, 'tcp'))
 
-        done, pending = yield from asyncio.wait([self._broadcast_listening, self._tcp_listening], return_when=concurrent.futures.FIRST_COMPLETED)
+        while True:
+            done, pending = yield from asyncio.wait([self._broadcast_listening, self._tcp_listening], return_when=concurrent.futures.FIRST_COMPLETED)
 
-        message, channel = yield from list(done)[0]
-        if channel == 'udp':
-            self._broadcast_listening = asyncio.async(listen_message(self._udp_messenger.listen_message, 'udp'))
-        else:
-            assert channel == 'tcp'
-            self._tcp_listening = asyncio.async(listen_message(self._tcp_messenger.listen_message, 'tcp'))
+            for task in done:
+                message, channel = yield from task
+                if channel == 'udp':
+                    self._broadcast_listening = asyncio.async(listen_message(self._udp_messenger.listen_message, 'udp'))
+                else:
+                    assert channel == 'tcp'
+                    self._tcp_listening = asyncio.async(listen_message(self._tcp_messenger.listen_message, 'tcp'))
+                self._message_queue.put_nowait(message)
+
+    @asyncio.coroutine
+    def take_message(self):
+        message = yield from self._message_queue.get()
+        self._logger.debug('Taking message: {}...'.format(message.type))
         return message
 
     @asyncio.coroutine

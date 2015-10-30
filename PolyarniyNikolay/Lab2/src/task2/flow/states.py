@@ -18,11 +18,12 @@ class OwnerState(State):
 
         heart_beat_timeout = asyncio.async(asyncio.sleep(context.const.heartbeat_timeout))
         calculating = asyncio.async(context.calculate())
-        reading = asyncio.async(self._read_message(context))
 
-        with auto_cancellation([heart_beat_timeout, calculating, reading]):
+        with auto_cancellation([heart_beat_timeout, calculating]):
             while True:
+                reading = asyncio.async(self._take_message(context))
                 done, pending = yield from asyncio.wait([heart_beat_timeout, calculating, reading], return_when=concurrent.futures.FIRST_COMPLETED)
+                reading.cancel()
 
                 if heart_beat_timeout in done:
                     self._logger.info('Token is here...')
@@ -58,19 +59,18 @@ class OwnerState(State):
                         yield from context.send_response(message, MessageType.TOKEN_IS_HERE)
                         yield from context.send_broadcast(MessageType.TOKEN_IS_HERE)
 
-                    reading = asyncio.async(self._read_message(context))
-
     
 class WaiterState(State):
 
     @asyncio.coroutine
     def execute(self, context: Context):
         waiter_timeout = asyncio.async(asyncio.sleep(context.const.waiter_timeout))
-        reading = asyncio.async(self._read_message(context))
 
-        with auto_cancellation([waiter_timeout, reading]):
+        with auto_cancellation([waiter_timeout]):
             while True:
+                reading = asyncio.async(self._take_message(context))
                 done, pending = yield from asyncio.wait([waiter_timeout, reading], return_when=concurrent.futures.FIRST_COMPLETED)
+                reading.cancel()
 
                 if waiter_timeout in done:
                     self._logger.info('Token was lost!')
@@ -93,8 +93,6 @@ class WaiterState(State):
                     elif message.type == MessageType.WHERE_IS_TOKEN:
                         yield from context.send_response(message, MessageType.TOKEN_WAS_HERE_RECENTLY)
 
-                    reading = asyncio.async(self._read_message(context))
-
 
 class LooserState(State):
 
@@ -102,14 +100,15 @@ class LooserState(State):
     def execute(self, context: Context):
         looser_ask_timeout = asyncio.async(asyncio.sleep(context.const.looser_ask_timeout))
         looser_answer_timeout = asyncio.async(asyncio.sleep(context.const.looser_answer_timeout))
-        reading = asyncio.async(self._read_message(context))
 
         self._logger.info('Searching for token...')
         yield from context.send_broadcast(MessageType.WHERE_IS_TOKEN)
 
-        with auto_cancellation([looser_ask_timeout, looser_answer_timeout, reading]):
+        with auto_cancellation([looser_ask_timeout, looser_answer_timeout]):
             while True:
+                reading = asyncio.async(self._take_message(context))
                 done, pending = yield from asyncio.wait([looser_ask_timeout, looser_answer_timeout, reading], return_when=concurrent.futures.FIRST_COMPLETED)
+                reading.cancel()
 
                 if looser_answer_timeout in done:
                     self._logger.info('Token lost!')
@@ -143,22 +142,21 @@ class LooserState(State):
                         looser_ask_timeout = asyncio.async(asyncio.sleep(context.const.looser_ask_timeout))
                         looser_answer_timeout = asyncio.async(asyncio.sleep(context.const.looser_answer_timeout))
 
-                    reading = asyncio.async(self._read_message(context))
-
 
 class GeneratingState(State):
 
     @asyncio.coroutine
     def execute(self, context: Context):
         generating_timeout = asyncio.async(asyncio.sleep(context.const.generating_timeout))
-        reading = asyncio.async(self._read_message(context))
 
         self._logger.info('I am generating token...')
         yield from context.send_broadcast(MessageType.GENERATING_TOKEN)
 
-        with auto_cancellation([generating_timeout, reading]):
+        with auto_cancellation([generating_timeout]):
             while True:
+                reading = asyncio.async(self._take_message(context))
                 done, pending = yield from asyncio.wait([generating_timeout, reading], return_when=concurrent.futures.FIRST_COMPLETED)
+                reading.cancel()
 
                 if generating_timeout in done:
                     self._logger.info('I generated token!')
@@ -184,5 +182,3 @@ class GeneratingState(State):
                         context.update_token(message.token, message.data)
                         context.state = OwnerState()
                         return
-
-                    reading = asyncio.async(self._read_message(context))
