@@ -3,6 +3,7 @@ package ru.network.message;
 import ru.network.Node;
 import ru.network.ServerNode;
 
+import javax.json.Json;
 import javax.json.JsonObject;
 
 /**
@@ -10,9 +11,17 @@ import javax.json.JsonObject;
  */
 public class ReceivedTokenMessage extends Message {
     public static final String TYPE = "receivedToken";
+    public static final String TOKEN = "token";
+    private final String token;
 
-    public ReceivedTokenMessage(Node sender) {
+    public ReceivedTokenMessage(Node sender, String token) {
         super(sender, TYPE);
+        this.token = token;
+    }
+
+    public ReceivedTokenMessage(Node sender, JsonObject content) {
+        super(sender, TYPE);
+        this.token = content.getString(TOKEN);
     }
 
     @Override
@@ -22,6 +31,8 @@ public class ReceivedTokenMessage extends Message {
 
     @Override
     protected JsonObject encode() {
-        return null;
+        return Json.createObjectBuilder()
+                .add(TOKEN, token)
+                .build();
     }
 }

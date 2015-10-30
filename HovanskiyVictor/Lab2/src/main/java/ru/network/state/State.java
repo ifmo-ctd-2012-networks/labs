@@ -1,8 +1,10 @@
 package ru.network.state;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.network.Looper;
-import ru.network.NodeStatus;
+import ru.network.Node;
 import ru.network.ServerNode;
 import ru.network.message.*;
 
@@ -10,9 +12,11 @@ import ru.network.message.*;
  * @author victor
  */
 public abstract class State {
-
+    private final Logger log = LoggerFactory.getLogger(State.class);
     protected final Looper looper;
     protected final ServerNode node;
+    private static final long PONG_TIMEOUT = 3000;
+    private long previousPing;
 
     public State(ServerNode node) {
         this.node = node;
@@ -20,7 +24,7 @@ public abstract class State {
     }
 
     public void enter() {
-
+        previousPing = System.currentTimeMillis();
     }
 
     public void leave() {
@@ -28,7 +32,23 @@ public abstract class State {
     }
 
     public void tick() {
-        //node.getApplicationLayer().se;
+        long timestamp = System.currentTimeMillis();
+        boolean decreasing = false;
+        for (Node neighbour : node.getRing().neighbours()) {
+            if (neighbour.isActive() && timestamp - neighbour.getTimestamp() >= PONG_TIMEOUT) {
+                log.debug(neighbour + " inactive!");
+                neighbour.setActive(false);
+                decreasing = true;
+            }
+            node.getApplicationLayer().send(neighbour, new PingMessage(node));
+        }
+        if (decreasing) {
+            decreasing();
+        }
+    }
+
+    public void decreasing() {
+
     }
 
     /**
@@ -52,13 +72,7 @@ public abstract class State {
      * @param message сообщение с токеном
      */
     public void handleSendToken(SendTokenMessage message) {
-        if (node.getOperationNumber() >= message.getOperationNumber()) {
-            return;
-        }
-        node.setOperationNumber(message.getOperationNumber());
-        node.setData(message.getData());
-        node.setStatus(NodeStatus.EXECUTING);
-        node.getApplicationLayer().send(message.getSender(), new ReceivedTokenMessage(node));
+
     }
 
     /**
@@ -78,10 +92,15 @@ public abstract class State {
     }
 
     public void handleStartViewChange(StartViewChangeMessage message) {
-
+        assert message.getSender().isValid();
+        if (node.getOperationNumber() < message.getOperationNumber() || node.getMacAddress().compareTo(message.getSender().getMacAddress()) >= 0) {
+            node.getApplicationLayer().send(message.getSender(), new DoViewChangeMessage(node));
+        } else {
+            node.getApplicationLayer().send(message.getSender(), new DiscardViewChangeMessage(node));
+        }
     }
 
-    public void handleDoViewChange() {
+    public void handleDoViewChange(DoViewChangeMessage message) {
 
     }
 

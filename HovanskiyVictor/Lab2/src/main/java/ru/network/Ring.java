@@ -19,6 +19,10 @@ public class Ring {
         nodes.put(node.getMacAddress(), node);
     }
 
+    public void clear() {
+        nodes.clear();
+    }
+
     public Node left() {
         if (nodes.size() == 1) {
             return null;
@@ -27,7 +31,11 @@ public class Ring {
         if (entry != null) {
             entry.getValue();
         }
-        return nodes.lastEntry().getValue();
+        entry = nodes.lastEntry();
+        if (entry == null) {
+            return null;
+        }
+        return entry.getValue();
     }
 
     public Node right() {
@@ -38,7 +46,11 @@ public class Ring {
         if (entry != null) {
             return entry.getValue();
         }
-        return nodes.firstEntry().getValue();
+        entry =  nodes.firstEntry();
+        if (entry == null) {
+            return null;
+        }
+        return entry.getValue();
     }
 
     public List<Node> neighbours() {
@@ -47,17 +59,28 @@ public class Ring {
         }
         List<Node> temp = new ArrayList<>();
         Node prev = left();
-        if (!prev.getMacAddress().equals(node.getMacAddress())) {
+        if (prev != null && !prev.getMacAddress().equals(node.getMacAddress())) {
             temp.add(prev);
         }
         Node next = right();
-        if (!next.getMacAddress().equals(node.getMacAddress())) {
+        if (next != null && prev != next && !next.getMacAddress().equals(node.getMacAddress())) {
             temp.add(next);
         }
         return temp;
     }
 
     public Node findNodeByAddress(InetAddress address) {
-        return null;
+        Optional<Node> t = nodes.values().stream().filter(n -> n.getAddress().equals(address)).findFirst();
+        if (t.isPresent()) {
+            return t.get();
+        }
+        Node node = new Node();
+        node.setAddress(address);
+        return node;
+    }
+
+    @Override
+    public String toString() {
+        return "Ring" + nodes.values();
     }
 }

@@ -12,15 +12,26 @@ public class Node {
     protected int port;
     protected String macAddress;
     private boolean active;
+    private long timestamp;
 
-    public Node(String hostname, int port, String macAddress) {
-        this.hostname = hostname;
-        this.port = port;
+    public void setMacAddress(String macAddress) {
         this.macAddress = macAddress;
     }
 
-    public Node() {
+    public void setHostname(String hostname) {
+        this.hostname = hostname;
+    }
 
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public void setAddress(InetAddress address) {
+        this.address = address;
+    }
+
+    public InetAddress getAddress() {
+        return address;
     }
 
     public String getMacAddress() {
@@ -47,8 +58,20 @@ public class Node {
         this.active = active;
     }
 
+    public boolean isValid() {
+        return address != null && macAddress != null;
+    }
+
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[hostname=" + hostname + ", port=" + port + ", macAddress=" + macAddress + "]";
+        return getClass().getSimpleName() + "[hostname=" + hostname + ", active=" + active + "]";
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 }

@@ -2,7 +2,6 @@ package ru.network.state;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.network.Node;
 import ru.network.ServerNode;
 import ru.network.message.*;
 
@@ -14,7 +13,7 @@ import java.util.List;
  */
 public class InitializationState extends State {
     private final Logger log = LoggerFactory.getLogger(InitializationState.class);
-    private static final long IDENTITY_TIMEOUT = 1000;
+    private static final long IDENTITY_TIMEOUT = 5000;
     private long previous;
     private boolean listenIdentities;
 
@@ -26,6 +25,7 @@ public class InitializationState extends State {
 
     @Override
     public void tick() {
+        super.tick();
         //log.debug("tick");
         long timestamp = System.currentTimeMillis();
         if (listenIdentities && timestamp - previous >= IDENTITY_TIMEOUT) {
@@ -35,10 +35,14 @@ public class InitializationState extends State {
             assert !identityMessages.isEmpty() : "Никто не отозвался на broadcast";
 
             for (SendIdentityMessage message : identityMessages) {
-                Node other = new Node(message.getHostname(), message.getPort(), message.getMacAddress());
-                log.debug("Добавляем в кольцо " + other);
-                node.getRing().put(other);
+                message.getSender().setHostname(message.getHostname());
+                message.getSender().setPort(message.getPort());
+                message.getSender().setMacAddress(message.getMacAddress());
+                log.debug("Добавляем в кольцо " + message.getSender());
+                node.getRing().put(message.getSender());
             }
+
+
 
             node.setState(new RecoveryState(node));
         }

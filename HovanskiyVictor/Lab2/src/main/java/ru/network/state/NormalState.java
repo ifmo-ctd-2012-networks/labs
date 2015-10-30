@@ -6,12 +6,14 @@ import ru.network.Node;
 import ru.network.ServerNode;
 import ru.network.message.ReceivedTokenMessage;
 import ru.network.message.SendTokenMessage;
+import ru.network.message.StartViewChangeMessage;
 
 /**
  * @author victor
  */
 public class NormalState extends State {
     private final Logger log = LoggerFactory.getLogger(NormalState.class);
+
     public NormalState(ServerNode node) {
         super(node);
     }
@@ -23,18 +25,26 @@ public class NormalState extends State {
             node.setToken(message.getToken());
             node.setData(message.getData());
         }
-        node.getApplicationLayer().send(message.getSender(), new ReceivedTokenMessage(node));
+        node.getApplicationLayer().send(message.getSender(), new ReceivedTokenMessage(node, message.getToken()));
+    }
+
+    @Override
+    public void enter() {
+        log.debug("enter");
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
         if (node.hasToken()) {
             node.setState(new ExecutingState(node));
         }
     }
 
     @Override
-    public void enter() {
-        log.debug("enter");
-        if (node.hasToken()) {
-            node.setState(new ExecutingState(node));
-        }
+    public void decreasing() {
+        log.debug("Количество активных соседей уменьшилось");
+        node.setState(new ViewChangingState(node));
     }
 
     @Override

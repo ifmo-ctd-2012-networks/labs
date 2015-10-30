@@ -13,7 +13,7 @@ import java.util.TimerTask;
  * @author victor
  */
 public class ServerNode extends Node implements Runnable {
-    private final Logger log = LoggerFactory.getLogger(Node.class);
+    private final Logger log = LoggerFactory.getLogger(ServerNode.class);
 
     private ApplicationLayer applicationLayer;
     private NodeStatus status;

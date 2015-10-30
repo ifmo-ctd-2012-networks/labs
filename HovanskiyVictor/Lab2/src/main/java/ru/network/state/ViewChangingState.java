@@ -3,6 +3,7 @@ package ru.network.state;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.network.ServerNode;
+import ru.network.Token;
 import ru.network.message.DiscardViewChangeMessage;
 import ru.network.message.DoViewChangeMessage;
 import ru.network.message.StartViewChangeMessage;
@@ -28,7 +29,8 @@ public class ViewChangingState extends State {
     @Override
     public void enter() {
         log.debug("enter");
-        assert node.getRing() != null;
+        listenViewChanges = true;
+        previous = System.currentTimeMillis();
         node.getRing().neighbours().forEach(neighbour -> {
             node.getApplicationLayer().send(neighbour, new StartViewChangeMessage(node, node.getOperationNumber()));
         });
@@ -45,14 +47,12 @@ public class ViewChangingState extends State {
         //log.debug("tick");
         long timestamp = System.currentTimeMillis();
         if (listenViewChanges && timestamp - previous >= VIEW_CHANGE_TIMEOUT) {
-            log.debug("view change timeout");
+            log.debug("Время ожидания " + VIEW_CHANGE_TIMEOUT + "ms истекло");
             listenViewChanges = true;
 
             if (discardViewChangeMessages.isEmpty()) {
+                node.setToken(Token.generate());
                 if (doViewChangeMessages.isEmpty()) {
-                    // generating token
-                    String newToken = "";
-                    node.setToken(newToken);
                     node.setState(new ExecutingState(node));
                 } else {
                     node.setState(new NormalState(node));
@@ -60,6 +60,20 @@ public class ViewChangingState extends State {
             } else {
                 node.setState(new NormalState(node));
             }
+        }
+    }
+
+    @Override
+    public void handleDoViewChange(DoViewChangeMessage message) {
+        if (listenViewChanges) {
+            doViewChangeMessages.add(message);
+        }
+    }
+
+    @Override
+    public void handleDiscardViewChange(DiscardViewChangeMessage message) {
+        if (listenViewChanges) {
+            discardViewChangeMessages.add(message);
         }
     }
 }

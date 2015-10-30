@@ -1,7 +1,9 @@
 package ru.network.message;
 
 import ru.network.Node;
+import ru.network.ServerNode;
 
+import javax.json.Json;
 import javax.json.JsonObject;
 
 /**
@@ -14,8 +16,17 @@ public class DoViewChangeMessage extends Message {
         super(sender, TYPE);
     }
 
+    public DoViewChangeMessage(Node sender, JsonObject content) {
+        super(sender, TYPE);
+    }
+
+    @Override
+    public void delegate(ServerNode node) {
+        node.getState().handleDoViewChange(this);
+    }
+
     @Override
     protected JsonObject encode() {
-        return null;
+        return Json.createObjectBuilder().build();
     }
 }

@@ -14,7 +14,7 @@ import java.util.List;
  */
 public class RecoveryState extends State {
     private final Logger log = LoggerFactory.getLogger(RecoveryState.class);
-    private static final long RECOVERY_RESPONSE_TIMEOUT = 5000;
+    private static final long RECOVERY_RESPONSE_TIMEOUT = 2000;
     private long previous;
     private boolean listenRecoveryResponces;
     private List<RecoveryResponseMessage> recoveryResponses = new ArrayList<>();
@@ -38,6 +38,7 @@ public class RecoveryState extends State {
 
     @Override
     public void tick() {
+        super.tick();
         long timestamp = System.currentTimeMillis();
         if (listenRecoveryResponces && timestamp - previous >= RECOVERY_RESPONSE_TIMEOUT) {
             log.debug("Время ожидания " + RECOVERY_RESPONSE_TIMEOUT + "ms истекло");

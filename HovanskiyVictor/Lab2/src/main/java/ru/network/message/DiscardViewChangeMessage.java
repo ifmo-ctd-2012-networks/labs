@@ -3,6 +3,7 @@ package ru.network.message;
 import ru.network.Node;
 import ru.network.ServerNode;
 
+import javax.json.Json;
 import javax.json.JsonObject;
 
 /**
@@ -16,6 +17,10 @@ public class DiscardViewChangeMessage extends Message {
         super(sender, TYPE);
     }
 
+    public DiscardViewChangeMessage(Node sender, JsonObject content) {
+        super(sender, TYPE);
+    }
+
     @Override
     public void delegate(ServerNode node) {
         node.getState().handleDiscardViewChange(this);
@@ -23,6 +28,6 @@ public class DiscardViewChangeMessage extends Message {
 
     @Override
     protected JsonObject encode() {
-        return null;
+        return Json.createObjectBuilder().build();
     }
 }

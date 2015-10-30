@@ -26,7 +26,8 @@ public class ApplicationLayer extends TransportLayer {
     public void send(Node recipient, Message message) {
         assert recipient != null : "Получатель должен быть задан";
         assert !recipient.getMacAddress().equals(node.getMacAddress()) : "Получатель должен быть отличен от отправителя";
-        log.debug(node + " sends to " + recipient + ": " + message);
+        //assert recipient.isActive() : "Получатель должен быть активным";
+        log.debug("Отправка " + recipient + ": " + message);
         send(recipient.getInetSocketAddress(), Message.encode(message).toString());
     }
 
@@ -37,9 +38,12 @@ public class ApplicationLayer extends TransportLayer {
     public void listen(int port, boolean broadcast) {
         //log.debug(node + " is listening port " + port);
         bind(port, (address, string) -> {
-            log.debug("Received message: " + string + " from " + address);
             Node sender = node.getRing().findNodeByAddress(address);
+            assert sender != null;
             Message message = Message.decode(sender, string);
+            sender.setActive(true);
+            sender.setTimestamp(System.currentTimeMillis());
+            log.debug("Получено: " + message);
             looper.add(() -> {
                 message.delegate(node);
             });
@@ -47,7 +51,7 @@ public class ApplicationLayer extends TransportLayer {
     }
 
     public void broadcast(Message message) {
-        //log.debug(node + " broadcasts: " + message);
+        log.debug("Рассылка: " + message);
         broadcast(new InetSocketAddress(getInetAddress(), BROADCAST_PORT), Message.encode(message).toString());
     }
 }

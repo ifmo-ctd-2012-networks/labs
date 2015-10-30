@@ -29,6 +29,10 @@ public abstract class Message {
         this.type = type;
     }
 
+    public void setSender(Node sender) {
+        this.sender = sender;
+    }
+
     public String getType() {
         return type;
     }
@@ -65,6 +69,16 @@ public abstract class Message {
                 return new PongMessage(sender);
             case RecoveryMessage.TYPE:
                 return new RecoveryMessage(sender, content);
+            case StartViewChangeMessage.TYPE:
+                return new StartViewChangeMessage(sender, content);
+            case DoViewChangeMessage.TYPE:
+                return new DoViewChangeMessage(sender, content);
+            case DiscardViewChangeMessage.TYPE:
+                return new DiscardViewChangeMessage(sender, content);
+            case SendTokenMessage.TYPE:
+                return new SendTokenMessage(sender, content);
+            case ReceivedTokenMessage.TYPE:
+                return new ReceivedTokenMessage(sender, content);
         }
         throw new IllegalArgumentException("Unknown message type: \"" + type + "\"");
     }

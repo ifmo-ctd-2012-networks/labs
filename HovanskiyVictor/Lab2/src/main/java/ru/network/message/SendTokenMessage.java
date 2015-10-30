@@ -10,8 +10,8 @@ import javax.json.JsonObject;
  * @author victor
  */
 public class SendTokenMessage extends Message {
-    private static final String TYPE = "sendToken";
-    public static final String OPERATION_NUMBER = "hostname";
+    public static final String TYPE = "sendToken";
+    public static final String OPERATION_NUMBER = "opNumber";
     public static final String TOKEN = "token";
     public static final String DATA = "data";
     private final String token;
@@ -23,6 +23,13 @@ public class SendTokenMessage extends Message {
         this.operationNumber = operationNumber;
         this.token = token;
         this.data = data;
+    }
+
+    public SendTokenMessage(Node sender, JsonObject content) {
+        super(sender, TYPE);
+        this.operationNumber = content.getJsonNumber(OPERATION_NUMBER).longValue();
+        this.token = content.getString(TOKEN);
+        this.data = content.getString(DATA);
     }
 
     @Override

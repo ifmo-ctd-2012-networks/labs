@@ -97,7 +97,6 @@ public class TransportLayer {
         return macAddress;
     }
 
-
     private class ClientSender implements Runnable {
 
         private final LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
@@ -116,9 +115,12 @@ public class TransportLayer {
         public void send(InetSocketAddress inetSocketAddress, String message) {
             try {
                 queue.put(() -> {
+                    //log.debug("Send to " + inetSocketAddress);
                     try (Socket socket = new Socket(inetSocketAddress.getAddress(), inetSocketAddress.getPort())) {
                         DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
                         outputStream.writeUTF(message);
+                    } catch (ConnectException e) {
+                        //e.printStackTrace();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -148,7 +150,7 @@ public class TransportLayer {
         public void send(InetSocketAddress inetSocketAddress, String message) {
             try {
                 queue.put(() -> {
-                    log.debug("broadcast " + message);
+                    //log.debug("broadcast " + message);
                     byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
                     try (DatagramSocket socket = new DatagramSocket()) {
                         socket.setBroadcast(true);
@@ -208,6 +210,7 @@ public class TransportLayer {
         @Override
         public void run() {
             try (ServerSocket socket = new ServerSocket(port)) {
+                //log.debug("ServerSocket started at " + port);
                 while (running.get()) {
                     try {
                         Socket client = socket.accept();
@@ -217,11 +220,6 @@ public class TransportLayer {
                         if (listener != null) {
                             listener.accept(inetAddress, data);
                         }
-                        /*DatagramPacket packet = new DatagramPacket(new byte[PACKET_LENGTH], PACKET_LENGTH);
-                        socket.bind(packet);
-                        if (listener != null) {
-                            listener.accept(new String(packet.getData(), StandardCharsets.UTF_8));
-                        }*/
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
