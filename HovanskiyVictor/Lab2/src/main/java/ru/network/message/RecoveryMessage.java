@@ -6,18 +6,18 @@ import ru.network.ServerNode;
 import javax.json.JsonObject;
 
 /**
- * @author victors
+ * @author victor
  */
-public class PongMessage extends Message {
-    public static final String TYPE = "pong";
+public class RecoveryMessage extends Message {
+    public static final String TYPE = "recovery";
 
-    public PongMessage(Node sender) {
+    public RecoveryMessage(Node sender) {
         super(sender, TYPE);
     }
 
     @Override
     public void delegate(ServerNode node) {
-        node.getState().handlePong(this);
+        node.getState().handleRecovery(this);
     }
 
     @Override
