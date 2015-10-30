@@ -1,3 +1,0 @@
-Manifest-Version: 1.0
-Main-Class: ru.georgeee.itmo.sem7.networks.lab1.Application
-
