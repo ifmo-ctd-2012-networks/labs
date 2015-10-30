@@ -3,6 +3,7 @@ package ru.network.message;
 import ru.network.Node;
 import ru.network.ServerNode;
 
+import javax.json.Json;
 import javax.json.JsonObject;
 
 /**
@@ -10,9 +11,18 @@ import javax.json.JsonObject;
  */
 public class RecoveryMessage extends Message {
     public static final String TYPE = "recovery";
+    public static final String TIMESTAMP = "timestamp";
 
-    public RecoveryMessage(Node sender) {
+    private final long timestamp;
+
+    public RecoveryMessage(Node sender, long timestamp) {
         super(sender, TYPE);
+        this.timestamp = timestamp;
+    }
+
+    public RecoveryMessage(Node sender, JsonObject content) {
+        super(sender, TYPE);
+        this.timestamp = content.getJsonNumber(TIMESTAMP).longValue();
     }
 
     @Override
@@ -22,6 +32,8 @@ public class RecoveryMessage extends Message {
 
     @Override
     protected JsonObject encode() {
-        return null;
+        return Json.createObjectBuilder()
+                .add(TIMESTAMP, timestamp)
+                .build();
     }
 }

@@ -16,7 +16,7 @@ public class GetIdentityMessage extends Message {
         super(sender, TYPE);
     }
 
-    public GetIdentityMessage(Node sender, JsonObject content) {
+    public GetIdentityMessage(Node sender) {
         super(sender, TYPE);
     }
 

@@ -3,26 +3,25 @@ package ru.network.message;
 import ru.network.Node;
 import ru.network.ServerNode;
 
-import javax.json.Json;
 import javax.json.JsonObject;
 
 /**
- * @author victors
+ * @author victor
  */
-public class PongMessage extends Message {
-    public static final String TYPE = "pong";
+public class RecoveryResponseMessage extends Message {
+    public static final String TYPE = "recoveryResponse";
 
-    public PongMessage(Node sender) {
+    public RecoveryResponseMessage(Node sender) {
         super(sender, TYPE);
     }
 
     @Override
     public void delegate(ServerNode node) {
-        node.getState().handlePong(this);
+        node.getState().handleRecoveryResponse(this);
     }
 
     @Override
     protected JsonObject encode() {
-        return Json.createObjectBuilder().build();
+        return null;
     }
 }

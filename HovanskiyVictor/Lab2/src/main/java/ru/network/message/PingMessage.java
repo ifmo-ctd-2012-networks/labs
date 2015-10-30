@@ -3,6 +3,7 @@ package ru.network.message;
 import ru.network.Node;
 import ru.network.ServerNode;
 
+import javax.json.Json;
 import javax.json.JsonObject;
 
 /**
@@ -22,6 +23,6 @@ public class PingMessage extends Message {
 
     @Override
     protected JsonObject encode() {
-        return null;
+        return Json.createObjectBuilder().build();
     }
 }

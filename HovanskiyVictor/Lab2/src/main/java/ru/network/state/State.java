@@ -1,7 +1,7 @@
 package ru.network.state;
 
+
 import ru.network.Looper;
-import ru.network.Node;
 import ru.network.NodeStatus;
 import ru.network.ServerNode;
 import ru.network.message.*;
@@ -93,7 +93,7 @@ public abstract class State {
 
     }
 
-    public void handleRecoveryResponse() {
+    public void handleRecoveryResponse(RecoveryResponseMessage message) {
 
     }
 }

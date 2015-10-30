@@ -56,9 +56,15 @@ public abstract class Message {
 
         switch (type.getString()) {
             case GetIdentityMessage.TYPE:
-                return new GetIdentityMessage(sender, content);
+                return new GetIdentityMessage(sender);
             case SendIdentityMessage.TYPE:
                 return new SendIdentityMessage(sender, content);
+            case PingMessage.TYPE:
+                return new PingMessage(sender);
+            case PongMessage.TYPE:
+                return new PongMessage(sender);
+            case RecoveryMessage.TYPE:
+                return new RecoveryMessage(sender, content);
         }
         throw new IllegalArgumentException("Unknown message type: \"" + type + "\"");
     }

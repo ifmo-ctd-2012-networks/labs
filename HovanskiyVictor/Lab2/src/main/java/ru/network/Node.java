@@ -11,6 +11,7 @@ public class Node {
     protected String hostname;
     protected int port;
     protected String macAddress;
+    private boolean active;
 
     public Node(String hostname, int port, String macAddress) {
         this.hostname = hostname;
@@ -36,5 +37,18 @@ public class Node {
 
     public InetSocketAddress getInetSocketAddress() {
         return new InetSocketAddress(address, port);
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[hostname=" + hostname + ", port=" + port + ", macAddress=" + macAddress + "]";
     }
 }

@@ -24,12 +24,14 @@ public class ApplicationLayer extends TransportLayer {
     }
 
     public void send(Node recipient, Message message) {
+        assert recipient != null : "Получатель должен быть задан";
+        assert !recipient.getMacAddress().equals(node.getMacAddress()) : "Получатель должен быть отличен от отправителя";
         log.debug(node + " sends to " + recipient + ": " + message);
         send(recipient.getInetSocketAddress(), Message.encode(message).toString());
     }
 
     public void update(Node node) {
-
+        node.setActive(true);
     }
 
     public void listen(int port, boolean broadcast) {

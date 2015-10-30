@@ -2,7 +2,6 @@ package ru.network.state;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.network.Node;
 import ru.network.ServerNode;
 import ru.network.message.DiscardViewChangeMessage;
 import ru.network.message.DoViewChangeMessage;
@@ -18,7 +17,7 @@ public class ViewChangingState extends State {
     private final Logger log = LoggerFactory.getLogger(ViewChangingState.class);
     private static final long VIEW_CHANGE_TIMEOUT = 2000;
     private long previous;
-    private boolean isViewChangeTimeout = false;
+    private boolean listenViewChanges;
     private List<DoViewChangeMessage> doViewChangeMessages = new ArrayList<>();
     private List<DiscardViewChangeMessage> discardViewChangeMessages = new ArrayList<>();
 
@@ -42,11 +41,12 @@ public class ViewChangingState extends State {
 
     @Override
     public void tick() {
-        log.debug("tick");
+        super.tick();
+        //log.debug("tick");
         long timestamp = System.currentTimeMillis();
-        if (!isViewChangeTimeout && timestamp - previous >= VIEW_CHANGE_TIMEOUT) {
+        if (listenViewChanges && timestamp - previous >= VIEW_CHANGE_TIMEOUT) {
             log.debug("view change timeout");
-            isViewChangeTimeout = true;
+            listenViewChanges = true;
 
             if (discardViewChangeMessages.isEmpty()) {
                 if (doViewChangeMessages.isEmpty()) {

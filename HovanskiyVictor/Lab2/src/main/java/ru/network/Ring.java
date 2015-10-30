@@ -8,25 +8,53 @@ import java.util.*;
  */
 public class Ring {
 
-    private final Map<String, Node> nodeMap = new HashMap<>();
+    private final NavigableMap<String, Node> nodes = new TreeMap<>();
+    private final ServerNode node;
 
-    public Ring() {
-    }
-
-    public static Ring empty() {
-        return new Ring();
+    public Ring(ServerNode node) {
+        this.node = node;
     }
 
     public void put(Node node) {
-        nodeMap.put(node.getMacAddress(), node);
+        nodes.put(node.getMacAddress(), node);
     }
 
-    public int getPositionOf(Node node) {
-        return 0;
+    public Node left() {
+        if (nodes.size() == 1) {
+            return null;
+        }
+        Map.Entry<String, Node> entry = nodes.lowerEntry(node.getMacAddress());
+        if (entry != null) {
+            entry.getValue();
+        }
+        return nodes.lastEntry().getValue();
+    }
+
+    public Node right() {
+        if (nodes.size() == 1) {
+            return null;
+        }
+        Map.Entry<String, Node> entry = nodes.higherEntry(node.getMacAddress());
+        if (entry != null) {
+            return entry.getValue();
+        }
+        return nodes.firstEntry().getValue();
     }
 
     public List<Node> neighbours() {
-        return Collections.emptyList();
+        if (nodes.size() == 1) {
+            return Collections.emptyList();
+        }
+        List<Node> temp = new ArrayList<>();
+        Node prev = left();
+        if (!prev.getMacAddress().equals(node.getMacAddress())) {
+            temp.add(prev);
+        }
+        Node next = right();
+        if (!next.getMacAddress().equals(node.getMacAddress())) {
+            temp.add(next);
+        }
+        return temp;
     }
 
     public Node findNodeByAddress(InetAddress address) {

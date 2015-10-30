@@ -3,10 +3,9 @@ package ru.network;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.network.layer.ApplicationLayer;
-import ru.network.state.RecoveringState;
+import ru.network.state.InitializationState;
 import ru.network.state.State;
 
-import java.net.InetSocketAddress;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -25,7 +24,7 @@ public class ServerNode extends Node implements Runnable {
 
     private State state;
     private Looper looper;
-    private final Ring ring = new Ring();
+    private final Ring ring = new Ring(this);
 
     public ServerNode(String hostname, int port) {
         this.hostname = hostname;
@@ -57,24 +56,19 @@ public class ServerNode extends Node implements Runnable {
         applicationLayer.listen(ApplicationLayer.BROADCAST_PORT, true);
         this.macAddress = applicationLayer.getMacAddress().toString();
 
+        looper.add(() -> setState(new InitializationState(this)));
+
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                looper.mQueue.add(() -> {
+                looper.add(() -> {
                     getState().tick();
                 });
             }
         }, 0, 1000);
 
-        looper.mQueue.add(() -> setState(new RecoveringState(this)));
-
         Looper.loop();
-    }
-
-    @Override
-    public String toString() {
-        return "Node[hostname = " + hostname + ", port = " + port + "]";
     }
 
     public NodeStatus getStatus() {
