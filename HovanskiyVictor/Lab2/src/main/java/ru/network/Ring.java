@@ -23,50 +23,31 @@ public class Ring {
         nodes.clear();
     }
 
-    public Node left() {
-        if (nodes.size() == 1) {
-            return null;
-        }
-        Map.Entry<String, Node> entry = nodes.lowerEntry(node.getMacAddress());
-        if (entry != null) {
-            entry.getValue();
-        }
-        entry = nodes.lastEntry();
-        if (entry == null) {
-            return null;
-        }
-        return entry.getValue();
-    }
-
-    public Node right() {
-        if (nodes.size() == 1) {
-            return null;
-        }
-        Map.Entry<String, Node> entry = nodes.higherEntry(node.getMacAddress());
-        if (entry != null) {
-            return entry.getValue();
-        }
-        entry = nodes.firstEntry();
-        if (entry == null) {
-            return null;
-        }
-        return entry.getValue();
-    }
-
     public List<Node> neighbours() {
         if (nodes.size() == 1) {
             return Collections.emptyList();
         }
-        List<Node> temp = new ArrayList<>();
-        Node prev = left();
-        if (prev != null && !prev.getMacAddress().equals(node.getMacAddress())) {
-            temp.add(prev);
+        Node[] array = new Node[nodes.values().size()];
+        array = nodes.values().toArray(array);
+        int prev = -1;
+        int next = -1;
+        int cur = -1;
+        for (int i = 0; i < array.length; ++i) {
+            Node current = array[i];
+            if (current.getMacAddress().equals(node.getMacAddress())) {
+                prev = (array.length + i - 1) % array.length;
+                cur = i;
+                next = (i + 1) % array.length;
+            }
         }
-        Node next = right();
-        if (next != null && prev != next && !next.getMacAddress().equals(node.getMacAddress())) {
-            temp.add(next);
+        List<Node> list = new ArrayList<>();
+        if (prev != cur) {
+            list.add(array[prev]);
         }
-        return temp;
+        if (next != prev && next != cur) {
+            list.add(array[next]);
+        }
+        return list;
     }
 
     public Node findNodeByAddress(InetAddress address) {
