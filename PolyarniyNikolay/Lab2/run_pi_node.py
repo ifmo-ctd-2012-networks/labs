@@ -5,7 +5,7 @@ import logging
 import asyncio
 import netifaces
 
-from src.task2.entity.consts import Const
+from task2.entity.consts import Const
 from task2.flow.context import Context
 from task2.flow.states import LooserState
 from task2.flow.messenger import Messenger
@@ -70,7 +70,7 @@ def main(hostname=None, interface_name=None):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='node.log',
+    logging.basicConfig(#filename='node.log',
                         level=logging.DEBUG,
                         format='%(relativeCreated)d [%(threadName)s]\t%(name)s [%(levelname)s]:\t %(message)s')
 
