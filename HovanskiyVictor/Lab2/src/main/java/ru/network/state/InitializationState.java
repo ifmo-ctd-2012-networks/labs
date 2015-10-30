@@ -43,6 +43,7 @@ public class InitializationState extends State {
                 node.getRing().put(message.getSender());
             }
 
+            log.info("Кольцо: " + node.getRing());
 
             node.setState(new RecoveryState(node));
         }

@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.network.ServerNode;
 import ru.network.message.ReceivedTokenMessage;
+import ru.network.message.RecoveryMessage;
+import ru.network.message.RecoveryResponseMessage;
 import ru.network.message.SendTokenMessage;
 
 /**
@@ -37,6 +39,11 @@ public class NormalState extends State {
         if (node.hasToken()) {
             node.setState(new ExecutingState(node));
         }
+    }
+
+    @Override
+    public void handleRecovery(RecoveryMessage message) {
+        node.getApplicationLayer().send(message.getSender(), new RecoveryResponseMessage(node, node.getOperationNumber(), node.getData(), message.getTimestamp()));
     }
 
     @Override

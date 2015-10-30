@@ -7,8 +7,11 @@ import ru.network.CalculationService;
 import ru.network.Node;
 import ru.network.ServerNode;
 import ru.network.message.ReceivedTokenMessage;
+import ru.network.message.RecoveryMessage;
+import ru.network.message.RecoveryResponseMessage;
 import ru.network.message.SendTokenMessage;
 
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ExecutingState extends State {
     private static final Executor executor = Executors.newSingleThreadExecutor();
-    private static final long RECEIVED_TIMEOUT = 3000;
+    private static final long RECEIVED_TIMEOUT = 5000;
     private static final int NUMBERS_COUNT = 5;
     private final Logger log = LoggerFactory.getLogger(ExecutingState.class);
     private long previous;
@@ -39,15 +42,21 @@ public class ExecutingState extends State {
             node.setData(dataStamp);
             log.info("PI = " + node.getData());
             node.setOperationNumber(node.getOperationNumber() + 1);
-            Node next = node.getRing().right();
-            if (next == null) {
+            List<Node> neighbours = node.getRing().neighbours();
+            boolean resend = false;
+            for (Node neighbour : neighbours) {
+                if (neighbour.isActive()) {
+                    log.debug("Передаем токен дальше " + neighbour);
+                    listenReceivedToken = true;
+                    previous = System.currentTimeMillis();
+                    node.getApplicationLayer().send(neighbour, new SendTokenMessage(node, node.getOperationNumber(), node.getToken(), node.getData()));
+                    resend = true;
+                    break;
+                }
+            }
+            if (!resend) {
                 log.debug("Токен некому передавать, остается у нас");
                 node.setState(new ExecutingState(node));
-            } else {
-                log.debug("Передаем токен дальше " + next);
-                listenReceivedToken = true;
-                previous = System.currentTimeMillis();
-                node.getApplicationLayer().send(next, new SendTokenMessage(node, node.getOperationNumber(), node.getToken(), node.getData()));
             }
         } else if (listenReceivedToken && timestamp - previous >= RECEIVED_TIMEOUT) {
             log.debug("Время ожидания " + RECEIVED_TIMEOUT + "ms истекло");
@@ -83,6 +92,11 @@ public class ExecutingState extends State {
             }
             node.getApplicationLayer().send(message.getSender(), new ReceivedTokenMessage(node, message.getToken()));
         }
+    }
+
+    @Override
+    public void handleRecovery(RecoveryMessage message) {
+        node.getApplicationLayer().send(message.getSender(), new RecoveryResponseMessage(node, node.getOperationNumber(), node.getData(), message.getTimestamp()));
     }
 
     @Override

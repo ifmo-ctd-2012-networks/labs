@@ -51,6 +51,8 @@ public abstract class Message {
                 return new PongMessage(sender);
             case RecoveryMessage.TYPE:
                 return new RecoveryMessage(sender, content);
+            case RecoveryResponseMessage.TYPE:
+                return new RecoveryResponseMessage(sender, content);
             case StartViewChangeMessage.TYPE:
                 return new StartViewChangeMessage(sender, content);
             case DoViewChangeMessage.TYPE:

@@ -46,7 +46,13 @@ public class RecoveryState extends State {
             if (recoveryResponses.isEmpty()) {
                 node.setState(new ViewChangingState(node));
             } else {
-
+                for (RecoveryResponseMessage message : recoveryResponses) {
+                    if (node.getOperationNumber() < message.getOperationNumber()) {
+                        node.setOperationNumber(message.getOperationNumber());
+                        node.setData(message.getData());
+                    }
+                }
+                node.setState(new NormalState(node));
             }
         }
     }
@@ -59,7 +65,9 @@ public class RecoveryState extends State {
     @Override
     public void handleRecoveryResponse(RecoveryResponseMessage message) {
         if (listenRecoveryResponces) {
-            recoveryResponses.add(message);
+            if (message.getTimestamp() == previous) {
+                recoveryResponses.add(message);
+            }
         }
     }
 }

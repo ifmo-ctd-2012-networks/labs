@@ -30,6 +30,10 @@ public class RecoveryMessage extends Message {
         node.getState().handleRecovery(this);
     }
 
+    public long getTimestamp() {
+        return timestamp;
+    }
+
     @Override
     protected JsonObject encode() {
         return Json.createObjectBuilder()
