@@ -65,10 +65,11 @@ class TCPMessenger:
         client_socket.setblocking(1)
         with client_socket:
             address = yield from self._loop.getaddrinfo(host, port, family=socket.AF_INET, type=socket.SOCK_STREAM)
+            self._logger.debug('Connecting... {}'.format(address))
+
             assert len(address) == 1
             address = address[0]
 
-            self._logger.debug('Connecting...')
             client_socket.settimeout(self._connection_timeout)
             try:
                 yield from self._io_executor.map(client_socket.connect, address[4])
@@ -141,7 +142,7 @@ class Messenger:
         self._logger = logging.getLogger('Messenger')
 
         self._logger.info('Creating messengers...')
-        self._tcp_messenger = TCPMessenger(tcp_port, self._io_executor, self._loop)
+        self._tcp_messenger = TCPMessenger(tcp_port, self._io_executor, loop=self._loop)
         self._udp_messenger = UDPMessenger(broadcast_address, broadcast_port, self._io_executor, self._loop)
         self._broadcast_listening = None
         self._tcp_listening = None

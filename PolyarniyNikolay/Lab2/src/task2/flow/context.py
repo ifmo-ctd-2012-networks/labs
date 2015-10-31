@@ -67,6 +67,8 @@ class Context:
             success = yield from self._messenger.send_message(next_node_id, message)
             if success:
                 break
+            else:
+                logger.warn('Skipping node candidate to next!')
 
     @asyncio.coroutine
     def calculate(self):

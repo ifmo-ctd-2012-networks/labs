@@ -12,7 +12,7 @@ from task2.flow.messenger import Messenger
 from task2.utils.support import get_interface_mac_broadcast
 
 
-BROADCAST_DEFAULT_PORT = 23914
+BROADCAST_DEFAULT_PORT = 23912
 TCP_DEFAULT_PORT = 8239
 
 
