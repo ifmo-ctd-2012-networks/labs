@@ -67,11 +67,14 @@ class TCPMessenger:
             assert len(address) == 1
             address = address[0]
 
+            self._logger.debug('Connecting...')
             yield from self._io_executor.map(client_socket.connect, address[4])
             # yield from self._loop.sock_connect(client_socket, address[4])
 
+            self._logger.debug('Sending data... ({} bytes)'.format(len(data_bytes)))
             yield from self._io_executor.map(client_socket.sendall, data_bytes)
             # yield from self._loop.sock_sendall(client_socket, data_bytes)
+            self._logger.debug('Data sent!')
             client_socket._real_close()
         self._logger.debug('Sent {} bytes to {}!'.format(len(data_bytes), address[4]))
 

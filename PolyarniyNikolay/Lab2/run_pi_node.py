@@ -71,7 +71,7 @@ def main(hostname=None, interface_name=None):
 
 if __name__ == '__main__':
     logging.basicConfig(filename='node.log',
-                        level=logging.INFO,
+                        level=logging.DEBUG,
                         format='%(relativeCreated)d [%(threadName)s]\t%(name)s [%(levelname)s]:\t %(message)s')
 
     args = sys.argv
