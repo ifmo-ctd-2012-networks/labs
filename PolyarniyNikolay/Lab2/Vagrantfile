@@ -24,6 +24,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
       node.vm.provision "shell", 
         inline: "/bin/bash -c 'sudo kill -9 $(lsof -t -i:8239); exit 0'"
+      node.vm.provision "shell", 
+        inline: "rm -f /home/vagrant/node.log"
       node.vm.provision "shell",
         inline: "echo hello from node-#{i}"
       node.vm.provision :shell,  
