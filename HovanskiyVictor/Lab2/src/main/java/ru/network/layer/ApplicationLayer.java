@@ -6,6 +6,8 @@ import ru.network.Looper;
 import ru.network.Node;
 import ru.network.ServerNode;
 import ru.network.message.Message;
+import ru.network.message.PingMessage;
+import ru.network.message.PongMessage;
 
 import java.net.InetSocketAddress;
 
@@ -27,7 +29,9 @@ public class ApplicationLayer extends TransportLayer {
         assert recipient != null : "Получатель должен быть задан";
         assert !recipient.getMacAddress().equals(node.getMacAddress()) : "Получатель должен быть отличен от отправителя";
         //assert recipient.isActive() : "Получатель должен быть активным";
-        log.debug("Отправка " + recipient + ": " + message);
+        if (!PongMessage.class.isInstance(message) && !PingMessage.class.isInstance(message)) {
+            log.debug("Отправка " + recipient + ": " + message);
+        }
         send(recipient.getInetSocketAddress(), Message.encode(message).toString());
     }
 
@@ -43,7 +47,9 @@ public class ApplicationLayer extends TransportLayer {
             Message message = Message.decode(sender, string);
             sender.setActive(true);
             sender.setTimestamp(System.currentTimeMillis());
-            log.debug("Получено: " + message);
+            if (!PongMessage.class.isInstance(message) && !PingMessage.class.isInstance(message)) {
+                log.debug("Получено: " + message);
+            }
             looper.add(() -> {
                 message.delegate(node);
             });

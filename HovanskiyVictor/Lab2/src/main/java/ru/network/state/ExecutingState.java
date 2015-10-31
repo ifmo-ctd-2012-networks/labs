@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.network.CalculationService;
 import ru.network.Node;
+import ru.network.NodeStatus;
 import ru.network.ServerNode;
 import ru.network.message.ReceivedTokenMessage;
 import ru.network.message.RecoveryMessage;
@@ -95,13 +96,13 @@ public class ExecutingState extends State {
     }
 
     @Override
-    public void handleRecovery(RecoveryMessage message) {
-        node.getApplicationLayer().send(message.getSender(), new RecoveryResponseMessage(node, node.getOperationNumber(), node.getData(), message.getTimestamp()));
+    public void leave() {
+        log.debug("leave");
     }
 
     @Override
-    public void leave() {
-        log.debug("leave");
+    public NodeStatus getStatus() {
+        return NodeStatus.EXECUTING;
     }
 
     @Override

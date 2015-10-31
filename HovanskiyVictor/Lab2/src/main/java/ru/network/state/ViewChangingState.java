@@ -2,6 +2,7 @@ package ru.network.state;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.network.NodeStatus;
 import ru.network.ServerNode;
 import ru.network.Token;
 import ru.network.message.DiscardViewChangeMessage;
@@ -39,6 +40,11 @@ public class ViewChangingState extends State {
     @Override
     public void leave() {
         log.debug("leave");
+    }
+
+    @Override
+    public NodeStatus getStatus() {
+        return NodeStatus.VIEW_CHANGING;
     }
 
     @Override

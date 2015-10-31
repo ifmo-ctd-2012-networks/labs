@@ -16,11 +16,10 @@ public class ServerNode extends Node implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(ServerNode.class);
     private final Ring ring = new Ring(this);
     private ApplicationLayer applicationLayer;
-    private NodeStatus status;
     private String token;
     private String data = "";
     private long operationNumber;
-    private StateLog stateLog = new StateLog();
+    private StateLog stateLog = new StateLog(this);
     private State state;
     private Looper looper;
 
@@ -70,11 +69,7 @@ public class ServerNode extends Node implements Runnable {
     }
 
     public NodeStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(NodeStatus status) {
-        this.status = status;
+        return state.getStatus();
     }
 
     public State getState() {

@@ -2,6 +2,7 @@ package ru.network.state;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.network.NodeStatus;
 import ru.network.ServerNode;
 import ru.network.message.GetIdentityMessage;
 import ru.network.message.SendIdentityMessage;
@@ -45,6 +46,8 @@ public class InitializationState extends State {
 
             log.info("Кольцо: " + node.getRing());
 
+            node.getStateLog().save();
+
             node.setState(new RecoveryState(node));
         }
     }
@@ -62,15 +65,20 @@ public class InitializationState extends State {
     }
 
     @Override
+    public NodeStatus getStatus() {
+        return NodeStatus.INITIALIZATION;
+    }
+
+    @Override
     public void enter() {
         log.debug("enter");
         previous = System.currentTimeMillis();
         node.getStateLog().restore();
-        if (node.getStateLog().isEmpty()) {
+        if (node.getRing().all().isEmpty()) {
             listenIdentities = true;
             node.getApplicationLayer().broadcast(new GetIdentityMessage(node));
         } else {
-            //node.getApplicationLayer();
+            node.setState(new RecoveryState(node));
         }
     }
 

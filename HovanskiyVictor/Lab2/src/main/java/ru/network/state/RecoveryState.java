@@ -2,6 +2,7 @@ package ru.network.state;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.network.NodeStatus;
 import ru.network.ServerNode;
 import ru.network.message.RecoveryMessage;
 import ru.network.message.RecoveryResponseMessage;
@@ -60,6 +61,11 @@ public class RecoveryState extends State {
     @Override
     public void leave() {
         log.debug("leave");
+    }
+
+    @Override
+    public NodeStatus getStatus() {
+        return NodeStatus.RECOVERING;
     }
 
     @Override

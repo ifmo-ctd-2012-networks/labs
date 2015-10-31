@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.network.Looper;
 import ru.network.Node;
+import ru.network.NodeStatus;
 import ru.network.ServerNode;
 import ru.network.message.*;
 
@@ -16,7 +17,6 @@ public abstract class State {
     protected final Looper looper;
     protected final ServerNode node;
     private final Logger log = LoggerFactory.getLogger(State.class);
-    private long previousPing;
 
     public State(ServerNode node) {
         this.node = node;
@@ -24,14 +24,16 @@ public abstract class State {
     }
 
     public void enter() {
-        previousPing = System.currentTimeMillis();
     }
 
     public void leave() {
 
     }
 
+    public abstract NodeStatus getStatus();
+
     public void tick() {
+        log.debug("TICK " + getClass().getSimpleName());
         long timestamp = System.currentTimeMillis();
         boolean decreasing = false;
         for (Node neighbour : node.getRing().neighbours()) {
@@ -57,7 +59,9 @@ public abstract class State {
      * @param message пинг-сообщение
      */
     public void handlePing(PingMessage message) {
-        node.getApplicationLayer().send(message.getSender(), new PongMessage(node));
+        if (node.getStatus() != NodeStatus.INITIALIZATION) {
+            node.getApplicationLayer().send(message.getSender(), new PongMessage(node));
+        }
     }
 
     /**
@@ -66,7 +70,9 @@ public abstract class State {
      * @param message ответ на пинг
      */
     public void handlePong(PongMessage message) {
-        node.getApplicationLayer().update(message.getSender());
+        if (node.getStatus() != NodeStatus.INITIALIZATION) {
+            node.getApplicationLayer().update(message.getSender());
+        }
     }
 
     /**
@@ -96,11 +102,13 @@ public abstract class State {
     }
 
     public void handleStartViewChange(StartViewChangeMessage message) {
-        assert message.getSender().isValid();
-        if (node.getOperationNumber() < message.getOperationNumber() || node.getMacAddress().compareTo(message.getSender().getMacAddress()) >= 0) {
-            node.getApplicationLayer().send(message.getSender(), new DoViewChangeMessage(node));
-        } else {
-            node.getApplicationLayer().send(message.getSender(), new DiscardViewChangeMessage(node));
+        if (node.getStatus() == NodeStatus.EXECUTING || node.getStatus() == NodeStatus.NORMAL) {
+            assert message.getSender().isValid();
+            if (node.getOperationNumber() < message.getOperationNumber() || node.getMacAddress().compareTo(message.getSender().getMacAddress()) >= 0) {
+                node.getApplicationLayer().send(message.getSender(), new DoViewChangeMessage(node));
+            } else {
+                node.getApplicationLayer().send(message.getSender(), new DiscardViewChangeMessage(node));
+            }
         }
     }
 
@@ -113,7 +121,9 @@ public abstract class State {
     }
 
     public void handleRecovery(RecoveryMessage message) {
-
+        if (node.getStatus() == NodeStatus.EXECUTING || node.getStatus() == NodeStatus.NORMAL) {
+            node.getApplicationLayer().send(message.getSender(), new RecoveryResponseMessage(node, node.getOperationNumber(), node.getData(), message.getTimestamp()));
+        }
     }
 
     public void handleRecoveryResponse(RecoveryResponseMessage message) {

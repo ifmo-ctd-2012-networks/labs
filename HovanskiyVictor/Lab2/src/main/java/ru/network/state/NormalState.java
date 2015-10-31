@@ -2,6 +2,7 @@ package ru.network.state;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.network.NodeStatus;
 import ru.network.ServerNode;
 import ru.network.message.ReceivedTokenMessage;
 import ru.network.message.RecoveryMessage;
@@ -42,11 +43,6 @@ public class NormalState extends State {
     }
 
     @Override
-    public void handleRecovery(RecoveryMessage message) {
-        node.getApplicationLayer().send(message.getSender(), new RecoveryResponseMessage(node, node.getOperationNumber(), node.getData(), message.getTimestamp()));
-    }
-
-    @Override
     public void decreasing() {
         log.debug("Количество активных соседей уменьшилось");
         node.setState(new ViewChangingState(node));
@@ -55,5 +51,10 @@ public class NormalState extends State {
     @Override
     public void leave() {
         log.debug("leave");
+    }
+
+    @Override
+    public NodeStatus getStatus() {
+        return NodeStatus.NORMAL;
     }
 }

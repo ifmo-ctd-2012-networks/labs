@@ -23,6 +23,10 @@ public class Ring {
         nodes.clear();
     }
 
+    public List<Node> all() {
+        return new ArrayList<>(nodes.values());
+    }
+
     public List<Node> neighbours() {
         if (nodes.size() == 1) {
             return Collections.emptyList();
