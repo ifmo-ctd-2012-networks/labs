@@ -212,6 +212,7 @@ class Messenger:
                     assert channel == 'tcp'
                     self._tcp_listening = asyncio.async(listen_message(self._tcp_messenger.listen_message, 'tcp'))
                 self._message_queue.put_nowait(message)
+                self._logger.debug('Message {} putted. Queue size: {}.'.format(message.type, self._message_queue.qsize()))
 
     @asyncio.coroutine
     def take_message(self):

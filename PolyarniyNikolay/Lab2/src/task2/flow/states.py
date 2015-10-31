@@ -26,7 +26,7 @@ class OwnerState(State):
                 reading.cancel()
 
                 if heart_beat_timeout in done:
-                    self._logger.info('Token is here...')
+                    self._logger.debug('Token is here...')
                     yield from context.send_broadcast(MessageType.TOKEN_IS_HERE)
 
                     heart_beat_timeout = asyncio.async(asyncio.sleep(context.const.heartbeat_timeout))
@@ -41,7 +41,7 @@ class OwnerState(State):
 
                 if reading in done:
                     message = yield from reading
-                    self._logger.info('Message: {}.'.format(message.type))
+                    self._logger.debug('Message: {}.'.format(message.type))
 
                     if message.type == MessageType.TOKEN_IS_HERE:
                         if message.token.priority() > context.current_token.priority():
@@ -79,7 +79,7 @@ class WaiterState(State):
 
                 if reading in done:
                     message = yield from reading
-                    self._logger.info('Message: {}.'.format(message.type))
+                    self._logger.debug('Message: {}.'.format(message.type))
 
                     if message.type == MessageType.TOKEN_IS_HERE:
                         waiter_timeout.cancel()
@@ -122,7 +122,7 @@ class LooserState(State):
 
                 if reading in done:
                     message = yield from reading
-                    self._logger.info('Message: {}.'.format(message.type))
+                    self._logger.debug('Message: {}.'.format(message.type))
 
                     if message.type == MessageType.GENERATING_TOKEN:
                         if message.token.priority() < context.current_token.priority():
@@ -166,7 +166,7 @@ class GeneratingState(State):
 
                 if reading in done:
                     message = yield from reading
-                    self._logger.info('Message: {}.'.format(message.type))
+                    self._logger.debug('Message: {}.'.format(message.type))
 
                     if message.type == MessageType.TOKEN_IS_HERE:
                         if message.token.priority() > context.current_token.priority():

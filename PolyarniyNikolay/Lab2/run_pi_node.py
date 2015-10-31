@@ -12,7 +12,7 @@ from task2.flow.messenger import Messenger
 from task2.utils.support import get_interface_mac_broadcast
 
 
-BROADCAST_DEFAULT_PORT = 23912
+BROADCAST_DEFAULT_PORT = 23914
 TCP_DEFAULT_PORT = 8239
 
 
@@ -71,7 +71,7 @@ def main(hostname=None, interface_name=None):
 
 if __name__ == '__main__':
     logging.basicConfig(filename='node.log',
-                        level=logging.DEBUG,
+                        level=logging.INFO,
                         format='%(relativeCreated)d [%(threadName)s]\t%(name)s [%(levelname)s]:\t %(message)s')
 
     args = sys.argv
