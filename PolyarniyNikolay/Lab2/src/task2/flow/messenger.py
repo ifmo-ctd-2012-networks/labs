@@ -128,7 +128,9 @@ class Messenger:
 
         self._loop = loop or asyncio.get_event_loop()
         self._io_executor = AsyncExecutor(5, self._loop)
+        self._logger = logging.getLogger('Messenger')
 
+        self._logger.info('Creating messengers...')
         self._tcp_messenger = TCPMessenger(tcp_port, self._io_executor, self._loop)
         self._udp_messenger = UDPMessenger(broadcast_address, broadcast_port, self._io_executor, self._loop)
         self._broadcast_listening = None
@@ -137,11 +139,11 @@ class Messenger:
         self._daemon = None
         self._message_queue = asyncio.Queue()
 
-        self._logger = logging.getLogger('Messenger')
-
     def start(self):
+        self._logger.info('Starting TCP messenger...')
         self._tcp_messenger.start()
         self._daemon = asyncio.async(self._listen_messages_loop())
+        self._logger.info('Messenger started!')
 
     def stop(self):
         if self._daemon is not None:

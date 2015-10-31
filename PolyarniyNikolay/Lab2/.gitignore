@@ -3,3 +3,5 @@
 .vagrant
 *.pyc
 *.egg-info
+.idea
+
