@@ -19,8 +19,9 @@ BROADCAST_MESSAGE_SIZE_LIMIT = 4 * 1024
 
 class TCPMessenger:
 
-    def __init__(self, port, io_executor: AsyncExecutor, loop: asyncio.events.AbstractEventLoop=None):
+    def __init__(self, port, io_executor: AsyncExecutor, connection_timeout=2.0, loop: asyncio.events.AbstractEventLoop=None):
         self._port = port
+        self._connection_timeout = connection_timeout
 
         self._io_executor = io_executor
         self._loop = loop or asyncio.get_event_loop()
@@ -68,15 +69,21 @@ class TCPMessenger:
             address = address[0]
 
             self._logger.debug('Connecting...')
-            yield from self._io_executor.map(client_socket.connect, address[4])
-            # yield from self._loop.sock_connect(client_socket, address[4])
+            client_socket.settimeout(self._connection_timeout)
+            try:
+                yield from self._io_executor.map(client_socket.connect, address[4])
+                # yield from self._loop.sock_connect(client_socket, address[4])
 
-            self._logger.debug('Sending data... ({} bytes)'.format(len(data_bytes)))
-            yield from self._io_executor.map(client_socket.sendall, data_bytes)
-            # yield from self._loop.sock_sendall(client_socket, data_bytes)
-            self._logger.debug('Data sent!')
-            client_socket._real_close()
+                self._logger.debug('Sending data... ({} bytes)'.format(len(data_bytes)))
+                yield from self._io_executor.map(client_socket.sendall, data_bytes)
+                # yield from self._loop.sock_sendall(client_socket, data_bytes)
+                self._logger.debug('Data sent!')
+                client_socket._real_close()
+            except Exception:
+                self._logger.warn('Exception occurred while sending data to {}!'.format(host), exc_info=True)
+                return False
         self._logger.debug('Sent {} bytes to {}!'.format(len(data_bytes), address[4]))
+        return True
 
 
 class UDPMessenger:
@@ -232,7 +239,7 @@ class Messenger:
     def send_message(self, node_id, message):
         self._logger.debug('Sending "{}" message to node {}...'.format(message.type, node_id))
         host = self.nodes[node_id]
-        yield from self._tcp_messenger.send_message(host, self._serialize(message))
+        return (yield from self._tcp_messenger.send_message(host, self._serialize(message)))
 
     @property
     def node_id(self):

@@ -60,9 +60,13 @@ class Context:
 
     def send_message_to_next(self, message_type: MessageType):
         nodes = sorted(self._messenger.nodes.keys())
-        next_node_id = nodes[(nodes.index(self.node_id) + 1) % len(nodes)]
-        message = self._construct_message(message_type)
-        yield from self._messenger.send_message(next_node_id, message)
+        next_node_id = self.node_id
+        while True:
+            next_node_id = nodes[(nodes.index(next_node_id) + 1) % len(nodes)]
+            message = self._construct_message(message_type)
+            success = yield from self._messenger.send_message(next_node_id, message)
+            if success:
+                break
 
     @asyncio.coroutine
     def calculate(self):
