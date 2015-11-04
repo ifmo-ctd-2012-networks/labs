@@ -6,20 +6,72 @@ import asyncio
 import logging
 import concurrent
 import concurrent.futures
+from abc import abstractmethod
 
 from task2.utils.serialization import create_object
-from task2.entity.messages import TYPE_TO_CLASS, MessageType
+from task2.entity.messages import TYPE_TO_CLASS, MessageType, TakeTokenMessage
 from task2.entity.messages import Message
-from task2.utils.support import AsyncExecutor
+from task2.utils.support import AsyncExecutor, auto_cancellation, wrap_exc
 
 
 ENCODING = 'utf-8'
 BROADCAST_MESSAGE_SIZE_LIMIT = 4 * 1024
 
 
-class TCPMessenger:
+class ProtocolListener:
+
+    def __init__(self):
+        self._daemon = None
+        self._message_queue = asyncio.Queue()
+        self._on_message = None
+
+    def start(self):
+        self._daemon = wrap_exc(asyncio.async(self._listen_messages()), self._get_logger())
+
+    def stop(self):
+        if self._daemon is not None:
+            self._daemon.cancel()
+            self._daemon = None
+
+    def set_on_message(self, cb_coroutine):
+        self._on_message = cb_coroutine
+
+    @asyncio.coroutine
+    def take_message(self):
+        message = yield from self._message_queue.get()
+        self._get_logger().debug('Taking message: {}...'.format(message.type))
+        return message
+
+    def _deserialize(self, data_bytes) -> Message:
+        message_state = json.loads(data_bytes.decode(encoding=ENCODING))
+        self._get_logger().debug('Parsing message: {}...'.format(message_state))
+
+        message_class = TYPE_TO_CLASS[MessageType((message_state['type'],))]
+        return create_object(message_class, message_state)
+
+    def _listen_messages(self):
+        while True:
+            address, data_bytes = yield from self.listen_message()
+
+            message = self._deserialize(data_bytes)
+            if self._on_message is not None:
+                # noinspection PyCallingNonCallable
+                asyncio.async(self._on_message(message, address))
+            self._message_queue.put_nowait(message)
+
+    @abstractmethod
+    def _get_logger(self):
+        pass
+
+    @abstractmethod
+    def listen_message(self):
+        pass
+
+
+class TCPMessenger(ProtocolListener):
 
     def __init__(self, port, io_executor: AsyncExecutor, connection_timeout=2.0, loop: asyncio.events.AbstractEventLoop=None):
+        super().__init__()
         self._port = port
         self._connection_timeout = connection_timeout
 
@@ -32,11 +84,16 @@ class TCPMessenger:
 
         self._logger = logging.getLogger('TCPMessenger:{}'.format(self._port))
 
+    def _get_logger(self):
+        return self._logger
+
     def start(self):
+        super(TCPMessenger, self).start()
         self._server_socket.listen(1)
         self._logger.debug('Listening...')
 
     def stop(self):
+        super(TCPMessenger, self).stop()
         self._server_socket.close()
 
     @asyncio.coroutine
@@ -87,9 +144,10 @@ class TCPMessenger:
         return True
 
 
-class UDPMessenger:
+class UDPMessenger(ProtocolListener):
 
     def __init__(self, broadcast_address, port, io_executor: AsyncExecutor, loop: asyncio.events.AbstractEventLoop=None):
+        super().__init__()
         self._broadcast_address = broadcast_address
         self._port = port
 
@@ -103,16 +161,18 @@ class UDPMessenger:
         self._listening_broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._listening_broadcast_socket.bind(('', self._port))  # TODO: '' should be replaced with self._inet_address
         self._listening_broadcast_socket.setblocking(1)
-
         self._logger = logging.getLogger('UDPMessenger:{}'.format(self._port))
 
+    def _get_logger(self):
+        return self._logger
+
     def stop(self):
+        super(UDPMessenger, self).stop()
         self._broadcast_socket.close()
         self._listening_broadcast_socket.close()
 
     @asyncio.coroutine
     def listen_message(self):
-        self._logger.debug('Receiving...')
         data_bytes, address = yield from self._io_executor.map(
             self._listening_broadcast_socket.recvfrom, BROADCAST_MESSAGE_SIZE_LIMIT)
         self._logger.debug('Received {} bytes from {}!'.format(len(data_bytes), address))
@@ -144,28 +204,32 @@ class Messenger:
         self._logger.info('Creating messengers...')
         self._tcp_messenger = TCPMessenger(tcp_port, self._io_executor, loop=self._loop)
         self._udp_messenger = UDPMessenger(broadcast_address, broadcast_port, self._io_executor, self._loop)
-        self._broadcast_listening = None
-        self._tcp_listening = None
+
+        self._listeners = {
+            'tcp': self._tcp_messenger,
+            'udp': self._udp_messenger,
+        }
+
+        for messenger in self._listeners.values():
+            messenger.set_on_message(self._on_message)
 
         self._daemon = None
         self._message_queue = asyncio.Queue()
 
     def start(self):
-        self._logger.info('Starting TCP messenger...')
-        self._tcp_messenger.start()
-        self._daemon = asyncio.async(self._listen_messages_loop())
-        self._logger.info('Messenger started!')
+        self._logger.info('Starting messengers...')
+        for messenger in self._listeners.values():
+            messenger.start()
+        self._logger.info('Messengers started!')
+        self._daemon = wrap_exc(asyncio.async(self._taking_messages_loop()), self._logger)
 
     def stop(self):
         if self._daemon is not None:
             self._daemon.cancel()
-        if self._broadcast_listening is not None:
-            self._broadcast_listening.cancel()
-        if self._tcp_listening is not None:
-            self._tcp_listening.cancel()
-        self._io_executor.shutdown(wait=False)
+            self._daemon = None
         self._tcp_messenger.stop()
         self._udp_messenger.stop()
+        self._io_executor.shutdown(wait=False)
 
     def _serialize(self, message: Message):
         state = message.__getstate__()
@@ -190,6 +254,7 @@ class Messenger:
             yield from self.send_message(node_id, Message(MessageType.PING, self.node_id))
 
         if message.type == MessageType.TAKE_TOKEN:
+            assert isinstance(message, TakeTokenMessage)
             for node_id, host in message.nodes.items():
                 if node_id not in self.nodes:
                     self.nodes[node_id] = host
@@ -198,32 +263,17 @@ class Messenger:
                     assert host == self.nodes[node_id]
 
     @asyncio.coroutine
-    def _listen_messages_loop(self):
-
-        @asyncio.coroutine
-        def listen_message(listen_message, channel):
-            address, data_bytes = yield from listen_message()
-            message = self._deserialize(data_bytes)
-            yield from self._on_message(message, address)
-            return message, channel
-
-        self._broadcast_listening = self._broadcast_listening or asyncio.async(
-            listen_message(self._udp_messenger.listen_message, 'udp'))
-        self._tcp_listening = self._tcp_listening or asyncio.async(
-            listen_message(self._tcp_messenger.listen_message, 'tcp'))
-
+    def _taking_messages_loop(self):
+        takings = []
         while True:
-            done, pending = yield from asyncio.wait([self._broadcast_listening, self._tcp_listening], return_when=concurrent.futures.FIRST_COMPLETED)
-
-            for task in done:
-                message, channel = yield from task
-                if channel == 'udp':
-                    self._broadcast_listening = asyncio.async(listen_message(self._udp_messenger.listen_message, 'udp'))
-                else:
-                    assert channel == 'tcp'
-                    self._tcp_listening = asyncio.async(listen_message(self._tcp_messenger.listen_message, 'tcp'))
-                self._message_queue.put_nowait(message)
-                self._logger.debug('Message {} putted. Queue size: {}.'.format(message.type, self._message_queue.qsize()))
+            for messenger in self._listeners.values():
+                takings.append(asyncio.async(messenger.take_message()))
+            with auto_cancellation(takings):
+                done, pending = yield from asyncio.wait(takings, return_when=concurrent.futures.FIRST_COMPLETED)
+                for f in done:
+                    message = yield from f
+                    self._message_queue.put_nowait(message)
+                    self._logger.debug('Message {} putted. Queue size: {}.'.format(message.type, self._message_queue.qsize()))
 
     @asyncio.coroutine
     def take_message(self):

@@ -67,3 +67,12 @@ def parse_debug_level(s):
         'warn': logging.WARN,
         'error': logging.ERROR,
     }[s.lower()]
+
+
+def wrap_exc(f: asyncio.Future, logger):
+    def check_exception(f: asyncio.Future):
+        if not f.cancelled() and f.exception() is not None:
+            logger.error('Exception! {}'.format(f.exception()))
+
+    f.add_done_callback(check_exception)
+    return f

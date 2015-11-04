@@ -29,6 +29,7 @@ def run_node(mac, broadcast_address, cfg):
 
     context.state = LooserState()
     try:
+        asyncio.get_event_loop().set_debug(True)
         while True:
             asyncio.get_event_loop().run_until_complete(context.state.execute(context))
     except KeyboardInterrupt:
