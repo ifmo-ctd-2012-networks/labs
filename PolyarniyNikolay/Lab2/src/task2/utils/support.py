@@ -1,5 +1,6 @@
 __author__ = "Polyarnyi Nickolay"
 
+import logging
 import asyncio
 import netifaces
 from contextlib import contextmanager
@@ -45,3 +46,24 @@ def auto_cancellation(fs):
     yield
     for f in fs:
         f.cancel()
+
+
+def deep_merge(result, d):
+    for key, item in d.items():
+        if key not in result:
+            result[key] = item
+        else:
+            if isinstance(item, dict):
+                deep_merge(result[key], item)
+            else:
+                result[key] = item
+    return result
+
+
+def parse_debug_level(s):
+    return {
+        'debug': logging.DEBUG,
+        'info': logging.INFO,
+        'warn': logging.WARN,
+        'error': logging.ERROR,
+    }[s.lower()]
