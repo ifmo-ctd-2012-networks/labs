@@ -137,6 +137,9 @@ class TCPMessenger(ProtocolListener):
                 # yield from self._loop.sock_sendall(client_socket, data_bytes)
                 self._logger.debug('Data sent!')
                 client_socket._real_close()
+            except OSError as e:
+                self._logger.warn('Exception occurred while sending data to {}! ({})'.format(host, e))
+                return False
             except Exception:
                 self._logger.warn('Exception occurred while sending data to {}!'.format(host), exc_info=True)
                 return False
