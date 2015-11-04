@@ -3,7 +3,7 @@
 node:
     hostname: Null  # if Null - MAC address used
 
-    interface: Null  # if None - interface will be auto-chosen
+    interface: 'eth1'  # if None - interface will be auto-chosen
 
     broadcasting_port: 23912
     tcp_port: 8239
@@ -14,5 +14,5 @@ node:
 
 logging:
     filename: Null  # if Null - stderr used
-    level: "debug"  # can be debug/info/warn/error
+    level: "info"  # can be debug/info/warn/error
     format: "%(asctime)s [%(threadName)s]\t%(name)s [%(levelname)s]:\t %(message)s"

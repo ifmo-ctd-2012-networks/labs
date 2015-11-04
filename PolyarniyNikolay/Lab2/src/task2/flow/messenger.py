@@ -56,7 +56,7 @@ class ProtocolListener:
             message = self._deserialize(data_bytes)
             if self._on_message is not None:
                 # noinspection PyCallingNonCallable
-                asyncio.async(self._on_message(message, address))
+                wrap_exc(asyncio.async(self._on_message(message, address)), self._get_logger())
             self._message_queue.put_nowait(message)
 
     @abstractmethod
@@ -237,13 +237,6 @@ class Messenger:
 
         return json.dumps(state).encode(encoding=ENCODING)
 
-    def _deserialize(self, data_bytes) -> Message:
-        message_state = json.loads(data_bytes.decode(encoding=ENCODING))
-        self._logger.debug('Parsing message: {}...'.format(message_state))
-
-        message_class = TYPE_TO_CLASS[MessageType((message_state['type'],))]
-        return create_object(message_class, message_state)
-
     @asyncio.coroutine
     def _on_message(self, message: Message, address):
         node_id = message.author_node_id
@@ -252,6 +245,9 @@ class Messenger:
             self._nodes[node_id] = host
             self._logger.info('New node: {} at {}! (total number: {})'.format(node_id, host, len(self._nodes)))
             yield from self.send_message(node_id, Message(MessageType.PING, self.node_id))
+        elif address[0] != self.nodes[node_id]:
+            self._logger.error('Unexpected state! My nodes: {}. {} != {} (node_id={})'
+                               .format(self.nodes, address[0], self.nodes[node_id], node_id))
 
         if message.type == MessageType.TAKE_TOKEN:
             assert isinstance(message, TakeTokenMessage)
@@ -260,14 +256,16 @@ class Messenger:
                     self.nodes[node_id] = host
                     self._logger.info('New node: {} at {}! (total number: {})'.format(node_id, host, len(self._nodes)))
                 else:
-                    assert host == self.nodes[node_id]
+                    if host != self.nodes[node_id]:
+                        self._logger.error('Unexpected state! My nodes: {}. Nodes in message: {}. {} != {} (node_id={})'
+                                           .format(self.nodes, message.nodes, host, self.nodes[node_id], node_id))
 
     @asyncio.coroutine
     def _taking_messages_loop(self):
-        takings = []
         while True:
-            for messenger in self._listeners.values():
-                takings.append(asyncio.async(messenger.take_message()))
+            takings = []
+            for listener in self._listeners.values():
+                takings.append(wrap_exc(asyncio.async(listener.take_message()), self._logger))
             with auto_cancellation(takings):
                 done, pending = yield from asyncio.wait(takings, return_when=concurrent.futures.FIRST_COMPLETED)
                 for f in done:
