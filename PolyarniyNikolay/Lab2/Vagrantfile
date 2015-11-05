@@ -15,11 +15,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     v.memory = 512
   end
 
-  #config.vm.provision :shell, path: "install.sh" # build in into box
+  config.vm.provision :shell, path: "install.sh" # build in into box
 
   (10 .. 12).each do |i|
     config.vm.define "node-#{i}" do |node|
-      node.vm.network "public_network", ip: "192.168.0.1#{i}", bridge: "en0: Wi-Fi (AirPort)"
+      node.vm.network "public_network", ip: "192.168.1.1#{i}", bridge: "en0: Wi-Fi (AirPort)"
       node.vm.hostname = "node-#{i}"
 
       node.vm.provision "kill", type: "shell", 
