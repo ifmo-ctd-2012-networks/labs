@@ -48,7 +48,9 @@ public class Node {
                     if (i instanceof Inet4Address) {
                         ip = i;
                         System.out.println("Current IP address : " + ip.getHostAddress());
-                        break getIP;
+                        if (element.toString().startsWith("name:wlan0")) {
+                            break getIP;
+                        }
                     }
                 }
             }
@@ -229,44 +231,54 @@ public class Node {
     }
 
     private void receiveToken() {
-        while(true) {
-            try {
-                ServerSocket serverTCPSocket = new ServerSocket(Constants.TCP_PORT);
-                Thread th1 = new Thread(() -> {
-                    try {
-                        Thread.sleep(Constants.TICK);
-                        if (!serverTCPSocket.isClosed()) {
-                            serverTCPSocket.close();
+        try (ServerSocket serverTCPSocket = new ServerSocket(Constants.TCP_PORT)) {
+            serverTCPSocket.setSoTimeout(Constants.TICK * 3000);
+            while (true) {
+                try {
+                    Thread th1 = new Thread(() -> {
+                        try {
+                            Thread.sleep(Constants.TICK);
+                            if (!serverTCPSocket.isClosed()) {
+                                serverTCPSocket.close();
+                                initReconfigure(version + 1);
+                            }
+                        } catch (InterruptedException | IOException e) {
+                            e.printStackTrace();
                             initReconfigure(version + 1);
                         }
-                    } catch (InterruptedException | IOException e) {
-                        e.printStackTrace();
-                        initReconfigure(version + 1);
+                    });
+                    //th1.start();
+
+                    Socket prevSocket = serverTCPSocket.accept();
+                    DataInputStream is = new DataInputStream(prevSocket.getInputStream());
+                    Token token = new Token(is);
+                    //serverTCPSocket.close();
+
+                    System.out.println("Receive token: "
+                            + "myversion = " + version
+                            + ", version = " + token.version
+                            + ", MAC = " + token.macAddr
+                            + ", nDigits = " + token.nDigits);
+
+                    if ((state == State.CONFIG)
+                            || (token.version != this.version)
+                            || (token.nDigits < piBackup.size())
+                            || (!token.macAddr.equals(prevInRing))) {
+                        initReconfigure(Math.max(token.version, this.version) + 1);
+                    } else {
+                        savePi(token);
+                        sendToken(token);
                     }
-                });
-                //th1.start();
-
-                Socket prevSocket = serverTCPSocket.accept();
-                DataInputStream is = new DataInputStream(prevSocket.getInputStream());
-                Token token = new Token(is);
-                serverTCPSocket.close();
-
-                System.out.println("Receive token: "
-                        + "myversion = " + version
-                        + ", version = " + token.version
-                        + ", MAC = " + token.macAddr
-                        + ", nDigits = " + token.nDigits);
-
-                if ((state == State.CONFIG) || (token.version != this.version) || (token.nDigits < piBackup.size()) || (!token.macAddr.equals(prevInRing))) {
-                    initReconfigure(Math.max(token.version, this.version) + 1);
-                } else {
-                    savePi(token);
-                    sendToken(token);
+                } catch (SocketTimeoutException e) {
+                    System.out.println("Send token timeout");
+                    initReconfigure(version + 1);
+                } catch (IOException e) {
+                    //e.printStackTrace();
+                    initReconfigure(version + 1);
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-                initReconfigure(version + 1);
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
