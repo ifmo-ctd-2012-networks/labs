@@ -114,7 +114,7 @@ class ChangingStateBroadcast(Message):
         self._new_state = new_state
 
     def __getstate__(self):
-        state = super(Message, self).__getstate__()
+        state = super(ChangingStateBroadcast, self).__getstate__()
         state.update({
             'old_state': self._old_state,
             'new_state': self._new_state
@@ -122,7 +122,7 @@ class ChangingStateBroadcast(Message):
         return state
 
     def __setstate__(self, state):
-        super(Message, self).__setstate__(state)
+        super(ChangingStateBroadcast, self).__setstate__(state)
         self._old_state = state['old_state']
         self._new_state = state['new_state']
 
@@ -137,4 +137,8 @@ TYPE_TO_CLASS.update({
 
 TYPE_TO_CLASS.update({
     MessageType.TAKE_TOKEN: TakeTokenMessage
+})
+
+TYPE_TO_CLASS.update({
+    MessageType.CHANGING_STATE: ChangingStateBroadcast
 })

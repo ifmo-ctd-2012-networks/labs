@@ -204,13 +204,16 @@ class Messenger:
         self._logger = logging.getLogger('Messenger')
 
         self._logger.info('Creating messengers...')
-        self._tcp_messenger = TCPMessenger(tcp_port, self._io_executor, loop=self._loop)
-        self._udp_messenger = UDPMessenger(broadcast_address, broadcast_port, self._io_executor, True, self._loop)
+        if tcp_port != 0:
+            self._tcp_messenger = TCPMessenger(tcp_port, self._io_executor, loop=self._loop)
+        if broadcast_port != 0:
+            self._udp_messenger = UDPMessenger(broadcast_address, broadcast_port, self._io_executor, True, self._loop)
         self._debug_messenger = UDPMessenger(broadcast_address, debug_port, self._io_executor, False, self._loop)
 
         self._listeners = {
             'tcp': self._tcp_messenger,
             'udp': self._udp_messenger,
+            'debug': self._debug_messenger
         }
 
         for messenger in self._listeners.values():
@@ -297,6 +300,11 @@ class Messenger:
     def send_broadcast(self, message):
         message_bytes = self._serialize(message)
         yield from self._udp_messenger.send_message(message_bytes)
+
+    @asyncio.coroutine
+    def send_debug(self, message):
+        message_bytes = self._serialize(message)
+        yield from self._debug_messenger.send_message(message_bytes)
 
     @asyncio.coroutine
     def send_message(self, node_id, message):
