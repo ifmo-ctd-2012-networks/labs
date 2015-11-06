@@ -19,11 +19,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   node_group = 1
   if ENV['NODE_GROUP']
-    node_group = ENV['NODE_GROUP']
+    node_group = ENV['NODE_GROUP'].to_i
     puts "Node group: #{node_group}"
   else 
     puts "Warning!!! Using default node group: #{node_group}"
     puts "Use export to set node goup: 'export NODE_GROUP=5'"
+  end
+  
+  if (! (1 <= node_group  && node_group < 10) ) 
+    raise "Incorrect node_group: #{ENV['NODE_GROUP']}. Should satisfy: 0 <= nodegroup < 10."
   end
 
   (0 .. 2).each do |node_num|
