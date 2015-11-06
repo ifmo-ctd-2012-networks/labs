@@ -18,9 +18,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision :shell, path: "install.sh" # build in into box
 
   node_group = 1
+  if ENV['NODE_GROUP']
+    node_group = ENV['NODE_GROUP']
+    puts "Node group: #{node_group}"
+  else 
+    puts "Warning!!! Using default node group: #{node_group}"
+    puts "Use export to set node goup: 'export NODE_GROUP=5'"
+  end
 
   (0 .. 2).each do |node_num|
-    i = node_group * 10 + node_num
+    i = "#{node_group}#{node_num}"
     config.vm.define "node-#{i}" do |node|
       node.vm.network "public_network", ip: "192.168.1.1#{i}", bridge: "en0: Wi-Fi (AirPort)"
       node.vm.hostname = "node-#{i}"
