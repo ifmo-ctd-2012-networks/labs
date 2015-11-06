@@ -11,6 +11,7 @@ setup(name='task2',
       install_requires=[
           'netifaces>=0.10.4',
           'PyYAML>=3.11',
+          'aiohttp>=0.18.3',
           ],
       scripts=[
           "run_pi_node.py",
