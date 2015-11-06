@@ -17,7 +17,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.provision :shell, path: "install.sh" # build in into box
 
-  (10 .. 12).each do |i|
+  node_group = 1
+
+  (0 .. 2).each do |node_num|
+    i = node_group * 10 + node_num
     config.vm.define "node-#{i}" do |node|
       node.vm.network "public_network", ip: "192.168.1.1#{i}", bridge: "en0: Wi-Fi (AirPort)"
       node.vm.hostname = "node-#{i}"
