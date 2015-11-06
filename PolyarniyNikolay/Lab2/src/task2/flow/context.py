@@ -20,7 +20,7 @@ class Context:
         self._messenger = messenger
 
         self._data = ''
-        self._generated_tokens_revision = 1
+        self._generated_tokens_revision = 0
         self._given_token = None
 
     def _construct_message(self, message_type) -> Message:
@@ -31,7 +31,8 @@ class Context:
         else:
             return Message(message_type, self.node_id)
 
-    def increase_generated_tokens_revision(self):
+    def generate_token(self):
+        self._given_token = None
         self._generated_tokens_revision += 1
 
     def update_token(self, token: Token, data):
@@ -54,25 +55,21 @@ class Context:
         message = self._construct_message(message_type)
         yield from self._messenger.send_broadcast(message)
 
+    @asyncio.coroutine
     def send_response(self, income_message: Message, response_type: MessageType):
         response_message = self._construct_message(response_type)
-        yield from self._messenger.send_message(income_message.author_node_id, response_message)
+        success = yield from self._messenger.send_message(income_message.author_node_id, response_message)
+        if not success:
+            logger.warn('Response message sending failure! (request: {}, response: {}, to node_id={})'
+                        .format(income_message.type, response_type, income_message.author_node_id))
 
+    @asyncio.coroutine
     def send_message_to_next(self, message_type: MessageType):
-        nodes = sorted(self._messenger.nodes.keys())
-        next_node_id = self.node_id
-        attempt = 1
-        while True:
-            next_node_id = nodes[(nodes.index(next_node_id) + 1) % len(nodes)]
-            message = self._construct_message(message_type)
-            steps_number = (nodes.index(next_node_id) - nodes.index(self.node_id) + len(nodes)) % len(nodes)
-            logger.debug('Sending message to next +{} node...{}'.format(steps_number, '' if attempt == 1 else ' (attempt #{})'.format(attempt)))
-            success = yield from self._messenger.send_message(next_node_id, message)
-            if success:
-                break
-            else:
-                logger.warn('Skipping node candidate to next!')
-                attempt += 1
+        next_node_id = self._messenger.get_next_available_node_id()
+        message = self._construct_message(message_type)
+        logger.info('Sending message to next node (node_id={})...'.format(next_node_id))
+        success = yield from self._messenger.send_message(next_node_id, message)
+        return success
 
     @asyncio.coroutine
     def calculate(self):

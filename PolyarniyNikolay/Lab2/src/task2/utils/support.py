@@ -45,7 +45,8 @@ def get_interface_mac_broadcast(addrs):
 def auto_cancellation(fs):
     yield
     for f in fs:
-        f.cancel()
+        if f is not None:
+            f.cancel()
 
 
 def deep_merge(result, d):
