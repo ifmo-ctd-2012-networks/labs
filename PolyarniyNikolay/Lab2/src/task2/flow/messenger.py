@@ -49,6 +49,7 @@ class ProtocolListener:
         message_class = TYPE_TO_CLASS[MessageType((message_state['type'],))]
         return create_object(message_class, message_state)
 
+    @asyncio.coroutine
     def _listen_messages(self):
         while True:
             address, data_bytes = yield from self.listen_message()
@@ -136,7 +137,6 @@ class TCPMessenger(ProtocolListener):
                 yield from self._io_executor.map(client_socket.sendall, data_bytes)
                 # yield from self._loop.sock_sendall(client_socket, data_bytes)
                 self._logger.debug('Data sent!')
-                client_socket._real_close()
             except OSError as e:
                 self._logger.warn('Exception occurred while sending data to {}! ({})'.format(host, e))
                 return False
@@ -199,6 +199,7 @@ class Messenger:
         self._mac = mac
         self._node_id = node_id
         self._nodes = {}
+        self._lost_nodes = set()
 
         self._loop = loop or asyncio.get_event_loop()
         self._io_executor = AsyncExecutor(5, self._loop)
@@ -243,11 +244,14 @@ class Messenger:
     @asyncio.coroutine
     def _on_message(self, message: Message, address):
         node_id = message.author_node_id
-        if node_id not in self._nodes:
+        if node_id in self._lost_nodes:
+            self._lost_nodes.remove(node_id)
+            self._logger.info('Heard about lost node again! (node_id={}) (so lost nodes: {})'
+                              .format(node_id, self._lost_nodes))
+        if node_id not in self.nodes:
             host = address[0]
-            self._nodes[node_id] = host
-            self._logger.info('New node: {} at {}! (total number: {})'.format(node_id, host, len(self._nodes)))
-            yield from self.send_message(node_id, Message(MessageType.PING, self.node_id))
+            self._add_node(node_id, host)
+            wrap_exc(asyncio.async(self.send_message(node_id, Message(MessageType.PING, self.node_id))), self._logger)
         elif address[0] != self.nodes[node_id]:
             self._logger.error('Unexpected state! My nodes: {}. {} != {} (node_id={})'
                                .format(self.nodes, address[0], self.nodes[node_id], node_id))
@@ -256,12 +260,19 @@ class Messenger:
             assert isinstance(message, TakeTokenMessage)
             for node_id, host in message.nodes.items():
                 if node_id not in self.nodes:
-                    self.nodes[node_id] = host
-                    self._logger.info('New node: {} at {}! (total number: {})'.format(node_id, host, len(self._nodes)))
+                    self._add_node(node_id, host)
                 else:
                     if host != self.nodes[node_id]:
                         self._logger.error('Unexpected state! My nodes: {}. Nodes in message: {}. {} != {} (node_id={})'
                                            .format(self.nodes, message.nodes, host, self.nodes[node_id], node_id))
+
+    def _add_node(self, node_id, host):
+        self.nodes[node_id] = host
+        self._logger.info('New node: {} at {}! (total number: {})'.format(node_id, host, len(self.nodes)))
+        def format_node_id(node_id):
+
+            return '{}{}'.format(node_id, '' if self.node_id != node_id else ' (me)')
+        self._logger.info('Nodes order: {}'.format([(format_node_id(node_id), self.nodes[node_id]) for node_id in sorted(self.nodes.keys())]))
 
     @asyncio.coroutine
     def _taking_messages_loop(self):
@@ -289,9 +300,25 @@ class Messenger:
 
     @asyncio.coroutine
     def send_message(self, node_id, message):
+        if node_id in self._lost_nodes:
+            self._logger.error('Sending message to node, that seems to be lost! (node id={}, message type={})'
+                               .format(node_id, message.type))
         self._logger.debug('Sending "{}" message to node {}...'.format(message.type, node_id))
         host = self.nodes[node_id]
-        return (yield from self._tcp_messenger.send_message(host, self._serialize(message)))
+        success = yield from self._tcp_messenger.send_message(host, self._serialize(message))
+        if not success:
+            self._lost_nodes.add(node_id)
+            self._logger.warn('Node seems to be lost! (node_id={})'.format(node_id))
+            if self.node_id == node_id:
+                self._logger.error('We can not connect with our-self?! ')
+        return success
+
+    def get_next_available_node_id(self):
+        nodes = sorted(self.nodes.keys())
+        next_index = (nodes.index(self.node_id) + 1)
+        for candidate_id in nodes[next_index:] + nodes[:next_index]:
+            if candidate_id not in self._lost_nodes:
+                return candidate_id
 
     @property
     def node_id(self):
