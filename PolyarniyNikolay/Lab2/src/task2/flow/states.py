@@ -10,7 +10,6 @@ from task2.utils.support import auto_cancellation
 
 
 class OwnerState(State):
-
     @asyncio.coroutine
     def execute(self, context: Context):
         self._logger.info('Token is here... Calculating...')
@@ -22,7 +21,8 @@ class OwnerState(State):
         with auto_cancellation([heart_beat_timeout, calculating]):
             while True:
                 reading = asyncio.async(self._take_message(context))
-                done, pending = yield from asyncio.wait([heart_beat_timeout, calculating, reading], return_when=concurrent.futures.FIRST_COMPLETED)
+                done, pending = yield from asyncio.wait([heart_beat_timeout, calculating, reading],
+                                                        return_when=concurrent.futures.FIRST_COMPLETED)
                 reading.cancel()
 
                 if heart_beat_timeout in done:
@@ -59,9 +59,8 @@ class OwnerState(State):
                         yield from context.send_response(message, MessageType.TOKEN_IS_HERE)
                         yield from context.send_broadcast(MessageType.TOKEN_IS_HERE)
 
-    
-class WaiterState(State):
 
+class WaiterState(State):
     @asyncio.coroutine
     def execute(self, context: Context):
         waiter_timeout = asyncio.async(asyncio.sleep(context.const.waiter_timeout))
@@ -69,7 +68,8 @@ class WaiterState(State):
         with auto_cancellation([waiter_timeout]):
             while True:
                 reading = asyncio.async(self._take_message(context))
-                done, pending = yield from asyncio.wait([waiter_timeout, reading], return_when=concurrent.futures.FIRST_COMPLETED)
+                done, pending = yield from asyncio.wait([waiter_timeout, reading],
+                                                        return_when=concurrent.futures.FIRST_COMPLETED)
                 reading.cancel()
 
                 if waiter_timeout in done:
@@ -95,7 +95,6 @@ class WaiterState(State):
 
 
 class LooserState(State):
-
     @asyncio.coroutine
     def execute(self, context: Context):
         looser_ask_timeout = asyncio.async(asyncio.sleep(context.const.looser_ask_timeout))
@@ -107,7 +106,8 @@ class LooserState(State):
         with auto_cancellation([looser_ask_timeout, looser_answer_timeout]):
             while True:
                 reading = asyncio.async(self._take_message(context))
-                done, pending = yield from asyncio.wait([looser_ask_timeout, looser_answer_timeout, reading], return_when=concurrent.futures.FIRST_COMPLETED)
+                done, pending = yield from asyncio.wait([looser_ask_timeout, looser_answer_timeout, reading],
+                                                        return_when=concurrent.futures.FIRST_COMPLETED)
                 reading.cancel()
 
                 if looser_answer_timeout in done:
@@ -143,8 +143,32 @@ class LooserState(State):
                         looser_answer_timeout = asyncio.async(asyncio.sleep(context.const.looser_answer_timeout))
 
 
-class GeneratingState(State):
+class VisualizerState(State):
+    @asyncio.coroutine
+    def execute(self, context: Context):
+        waiter_timeout = asyncio.async(asyncio.sleep(context.const.waiter_timeout))
 
+        with auto_cancellation([waiter_timeout]):
+            while True:
+                reading = asyncio.async(self._take_message(context))
+                done, pending = yield from asyncio.wait([waiter_timeout, reading],
+                                                        return_when=concurrent.futures.FIRST_COMPLETED)
+                reading.cancel()
+
+                if waiter_timeout in done:
+                    self._logger.info('Token was lost!')
+                    context.state = LooserState()
+                    return
+
+                if reading in done:
+                    message = yield from reading
+                    self._logger.debug('Message: {}.'.format(message.type))
+
+                    if message.type == MessageType.CHANGING_STATE:
+                        print("Founded mesage", message)
+
+
+class GeneratingState(State):
     @asyncio.coroutine
     def execute(self, context: Context):
         generating_timeout = asyncio.async(asyncio.sleep(context.const.generating_timeout))
@@ -155,7 +179,8 @@ class GeneratingState(State):
         with auto_cancellation([generating_timeout]):
             while True:
                 reading = asyncio.async(self._take_message(context))
-                done, pending = yield from asyncio.wait([generating_timeout, reading], return_when=concurrent.futures.FIRST_COMPLETED)
+                done, pending = yield from asyncio.wait([generating_timeout, reading],
+                                                        return_when=concurrent.futures.FIRST_COMPLETED)
                 reading.cancel()
 
                 if generating_timeout in done:

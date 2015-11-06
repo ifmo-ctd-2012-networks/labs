@@ -13,13 +13,11 @@ from task2.entity.messages import TYPE_TO_CLASS, MessageType, TakeTokenMessage
 from task2.entity.messages import Message
 from task2.utils.support import AsyncExecutor, auto_cancellation, wrap_exc
 
-
 ENCODING = 'utf-8'
 BROADCAST_MESSAGE_SIZE_LIMIT = 4 * 1024
 
 
 class ProtocolListener:
-
     def __init__(self):
         self._daemon = None
         self._message_queue = asyncio.Queue()
@@ -69,8 +67,8 @@ class ProtocolListener:
 
 
 class TCPMessenger(ProtocolListener):
-
-    def __init__(self, port, io_executor: AsyncExecutor, connection_timeout=2.0, loop: asyncio.events.AbstractEventLoop=None):
+    def __init__(self, port, io_executor: AsyncExecutor, connection_timeout=2.0,
+                 loop: asyncio.events.AbstractEventLoop = None):
         super().__init__()
         self._port = port
         self._connection_timeout = connection_timeout
@@ -148,8 +146,8 @@ class TCPMessenger(ProtocolListener):
 
 
 class UDPMessenger(ProtocolListener):
-
-    def __init__(self, broadcast_address, port, io_executor: AsyncExecutor, loop: asyncio.events.AbstractEventLoop=None):
+    def __init__(self, broadcast_address, port, io_executor: AsyncExecutor, listenable: bool,
+                 loop: asyncio.events.AbstractEventLoop = None):
         super().__init__()
         self._broadcast_address = broadcast_address
         self._port = port
@@ -160,10 +158,11 @@ class UDPMessenger(ProtocolListener):
         self._broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._broadcast_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self._broadcast_socket.setblocking(1)
-
-        self._listening_broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._listening_broadcast_socket.bind(('', self._port))  # TODO: '' should be replaced with self._inet_address
-        self._listening_broadcast_socket.setblocking(1)
+        if listenable:
+            self._listening_broadcast_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self._listening_broadcast_socket.bind(
+                ('', self._port))  # TODO: '' should be replaced with self._inet_address
+            self._listening_broadcast_socket.setblocking(1)
         self._logger = logging.getLogger('UDPMessenger:{}'.format(self._port))
 
     def _get_logger(self):
@@ -194,8 +193,7 @@ class UDPMessenger(ProtocolListener):
 
 
 class Messenger:
-
-    def __init__(self, mac, broadcast_address, broadcast_port, tcp_port, node_id=None, loop=None):
+    def __init__(self, mac, broadcast_address, broadcast_port, tcp_port, debug_port, node_id=None, loop=None):
         self._mac = mac
         self._node_id = node_id
         self._nodes = {}
@@ -206,7 +204,8 @@ class Messenger:
 
         self._logger.info('Creating messengers...')
         self._tcp_messenger = TCPMessenger(tcp_port, self._io_executor, loop=self._loop)
-        self._udp_messenger = UDPMessenger(broadcast_address, broadcast_port, self._io_executor, self._loop)
+        self._udp_messenger = UDPMessenger(broadcast_address, broadcast_port, self._io_executor, True, self._loop)
+        self._debug_messenger = UDPMessenger(broadcast_address, debug_port, self._io_executor, False, self._loop)
 
         self._listeners = {
             'tcp': self._tcp_messenger,
@@ -274,7 +273,8 @@ class Messenger:
                 for f in done:
                     message = yield from f
                     self._message_queue.put_nowait(message)
-                    self._logger.debug('Message {} putted. Queue size: {}.'.format(message.type, self._message_queue.qsize()))
+                    self._logger.debug(
+                        'Message {} putted. Queue size: {}.'.format(message.type, self._message_queue.qsize()))
 
     @asyncio.coroutine
     def take_message(self):

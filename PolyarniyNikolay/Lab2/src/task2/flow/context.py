@@ -6,15 +6,14 @@ from abc import abstractmethod, ABCMeta
 
 from task2.entity.token import Token
 from task2.entity.consts import Const
-from task2.entity.messages import MessageType, Message, MESSAGES_TYPES_WITH_TOKEN, TakeTokenMessage, MessageWithToken
+from task2.entity.messages import MessageType, Message, MESSAGES_TYPES_WITH_TOKEN, TakeTokenMessage, MessageWithToken, \
+    ChangingStateBroadcast
 from task2.flow.messenger import Messenger
-
 
 logger = logging.getLogger(__name__)
 
 
 class Context:
-
     def __init__(self, state, const: Const, messenger: Messenger):
         self._state = state
         self._const = const
@@ -39,7 +38,8 @@ class Context:
         if token.priority() > self.current_token.priority():
             logger.info('Token updated from {} to {}.'.format(self.current_token, token))
             self._given_token = token
-            logger.info('Changing data from {} to {}. (len: {}->{})'.format(self._data, data, len(self._data), len(data)))
+            logger.info(
+                'Changing data from {} to {}. (len: {}->{})'.format(self._data, data, len(self._data), len(data)))
             self._data = data
             return True
         else:
@@ -83,6 +83,11 @@ class Context:
         else:
             self._data = pi_data[:len(self._data) + 1]
 
+    def notify_state_changed(self, old_state, new_state):
+        message = ChangingStateBroadcast(self.node_id, old_state, new_state)
+        print(23)
+        yield from self._messenger.send_broadcast(message)
+
     @property
     def node_id(self):
         return self._messenger.node_id
@@ -93,7 +98,10 @@ class Context:
 
     @state.setter
     def state(self, state):
-        logger.info('State: {} -> {}.'.format(None if self.state is None else self.state.get_state_name(), state.get_state_name()))
+        old_state = "NONE" if self._state is None else self._state.get_state_name()
+        self.notify_state_changed(old_state, state.get_state_name())
+        logger.info('State: {} -> {}.'.format(None if self.state is None else self.state.get_state_name(),
+                                              state.get_state_name()))
         self._state = state
 
     @property
@@ -109,7 +117,6 @@ class Context:
 
 
 class State:
-
     __metaclass__ = ABCMeta
 
     def __init__(self):

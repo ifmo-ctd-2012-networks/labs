@@ -1,4 +1,4 @@
-__author__ = "Polyarnyi Nickolay"
+__author__ = ["Polyarnyi Nickolay", "Ilya Isaev"]
 
 import sys
 import yaml
@@ -9,7 +9,7 @@ import netifaces
 from task2 import config
 from task2.entity.consts import Const
 from task2.flow.context import Context
-from task2.flow.states import LooserState
+from task2.flow.states import VisualizerState
 from task2.flow.messenger import Messenger
 from task2.utils.support import get_interface_mac_broadcast, deep_merge, parse_debug_level
 
@@ -20,17 +20,15 @@ def run_node(mac, broadcast_address, cfg):
 
     cfg_node = cfg['node']
     hostname = cfg_node['hostname'] or mac
-    messenger = Messenger(mac, broadcast_address, cfg_node['broadcasting_port'], cfg_node['tcp_port'],
-                          cfg_node['debug_port'], node_id=hostname)
+    messenger = Messenger(mac, broadcast_address, cfg_node['broadcasting_port'], None, node_id=hostname)
     messenger.start()
 
     context = Context(None, consts, messenger)
 
     logger.debug('Running...')
 
-    context.state = LooserState()
+    context.state = VisualizerState()
     try:
-        asyncio.get_event_loop().set_debug(True)
         while True:
             asyncio.get_event_loop().run_until_complete(context.state.execute(context))
     except KeyboardInterrupt:
