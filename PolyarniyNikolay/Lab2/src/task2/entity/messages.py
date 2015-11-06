@@ -129,16 +129,13 @@ class ChangingStateBroadcast(Message):
 
 TYPE_TO_CLASS = {
     message_type: Message for message_type in MessageType
-    }
+}
 
 TYPE_TO_CLASS.update({
-                         message_type: MessageWithToken for message_type in MESSAGES_TYPES_WITH_TOKEN
-                         })
-
-TYPE_TO_CLASS.update({
-    MessageType.TAKE_TOKEN: TakeTokenMessage
+    message_type: MessageWithToken for message_type in MESSAGES_TYPES_WITH_TOKEN
 })
 
 TYPE_TO_CLASS.update({
-    MessageType.CHANGING_STATE: ChangingStateBroadcast
+    MessageType.TAKE_TOKEN: TakeTokenMessage,
+    MessageType.CHANGING_STATE: ChangingStateBroadcast,
 })

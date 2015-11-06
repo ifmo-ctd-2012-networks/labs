@@ -9,6 +9,7 @@ from task2.entity.consts import Const
 from task2.entity.messages import MessageType, Message, MESSAGES_TYPES_WITH_TOKEN, TakeTokenMessage, MessageWithToken, \
     ChangingStateBroadcast
 from task2.flow.messenger import Messenger
+from task2.utils import support
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +83,8 @@ class Context:
 
     def notify_state_changed(self, old_state, new_state):
         message = ChangingStateBroadcast(self.node_id, old_state, new_state)
-        logger.info("Sending debug message: {}".format(message.__getstate__()))
-        asyncio.ensure_future(self._messenger.send_debug(message))
+        logger.debug("Sending debug message: {}".format(message.__getstate__()))
+        support.wrap_exc(asyncio.async(self._messenger.send_debug(message)), logger)
 
     @property
     def node_id(self):
