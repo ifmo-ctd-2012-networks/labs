@@ -39,6 +39,7 @@ class Node:
 
 @asyncio.coroutine
 def get_last_state(request):
+    global state
     logger.info(state)
     response_body = "<table>" \
                     "<tr>" \
@@ -47,13 +48,15 @@ def get_last_state(request):
                     "<td>Last message time</td>" \
                     "<tr>"
     cur_time = datetime.datetime.now()
+    new_state = state.copy()
     for i in state.keys():
         st = state[i]
         if (cur_time - st.last_time).total_seconds() > 30:
-            del state[i]
+            del new_state[i]
         else:
             response_body += "<tr><td>{}</td><td>{}</td><td>{}</td></tr>".format(i, st.current_state,
                                                                                  st.last_time.strftime("%H:%M:%S.%f"))
+    state = new_state
     response_body += "</table>"
     return web.Response(body=response_body.encode('ascii'))
 
