@@ -47,7 +47,8 @@ def get_last_state(request):
                     "<td>Last message time</td>" \
                     "<tr>"
     cur_time = datetime.datetime.now()
-    for i, st in state.items():
+    for i in state.keys():
+        st = state[i]
         if (cur_time - st.last_time).total_seconds() > 30:
             del state[i]
         else:
