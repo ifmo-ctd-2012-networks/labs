@@ -10,8 +10,8 @@ from task2 import config
 from task2.entity.consts import Const
 from task2.flow.context import Context
 from task2.flow.states import LooserState
-from task2.flow.messenger import Messenger
-from task2.utils.support import get_interface_mac_broadcast, deep_merge, parse_debug_level
+from task2.flow.messenger import Messenger, UDPMessenger
+from task2.utils.support import get_interface_mac_broadcast, deep_merge, parse_debug_level, AsyncExecutor
 
 
 def run_node(mac, broadcast_address, cfg):
@@ -20,11 +20,11 @@ def run_node(mac, broadcast_address, cfg):
 
     cfg_node = cfg['node']
     hostname = cfg_node['hostname'] or mac
-    messenger = Messenger(mac, broadcast_address, cfg_node['broadcasting_port'], cfg_node['tcp_port'],
-                          cfg_node['debug_port'], node_id=hostname)
+    messenger = Messenger(mac, broadcast_address, cfg_node['broadcasting_port'], cfg_node['tcp_port'], node_id=hostname)
     messenger.start()
+    debug_messenger = UDPMessenger(broadcast_address, cfg_node['debug_port'], AsyncExecutor(2), False)
 
-    context = Context(None, consts, messenger)
+    context = Context(None, consts, messenger, debug_messenger)
 
     logger.debug('Running...')
 
@@ -36,6 +36,7 @@ def run_node(mac, broadcast_address, cfg):
     except KeyboardInterrupt:
         logger.info('Stopped by user.')
         messenger.stop()
+        debug_messenger.stop()
 
 
 def main(cfg):

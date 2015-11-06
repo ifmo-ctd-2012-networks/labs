@@ -8,17 +8,18 @@ from task2.entity.token import Token
 from task2.entity.consts import Const
 from task2.entity.messages import MessageType, Message, MESSAGES_TYPES_WITH_TOKEN, TakeTokenMessage, MessageWithToken, \
     ChangingStateBroadcast
-from task2.flow.messenger import Messenger
+from task2.flow.messenger import Messenger, UDPMessenger
 from task2.utils import support
 
 logger = logging.getLogger(__name__)
 
 
 class Context:
-    def __init__(self, state, const: Const, messenger: Messenger):
+    def __init__(self, state, const: Const, messenger: Messenger, debug_messenger: UDPMessenger):
         self._state = state
         self._const = const
         self._messenger = messenger
+        self._debug_messenger = debug_messenger
 
         self._data = ''
         self._generated_tokens_revision = 0
@@ -84,7 +85,7 @@ class Context:
     def notify_state_changed(self, old_state, new_state):
         message = ChangingStateBroadcast(self.node_id, old_state, new_state)
         logger.debug("Sending debug message: {}".format(message.__getstate__()))
-        support.wrap_exc(asyncio.async(self._messenger.send_debug(message)), logger)
+        support.wrap_exc(asyncio.async(self._debug_messenger.send_message(self._messenger._serialize(message))), logger)  # TODO: refactor
 
     @property
     def node_id(self):

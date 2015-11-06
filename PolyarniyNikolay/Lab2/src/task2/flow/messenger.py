@@ -163,6 +163,8 @@ class UDPMessenger(ProtocolListener):
             self._listening_broadcast_socket.bind(
                 ('', self._port))  # TODO: '' should be replaced with self._inet_address
             self._listening_broadcast_socket.setblocking(1)
+        else:
+            self._listening_broadcast_socket = None
         self._logger = logging.getLogger('UDPMessenger:{}'.format(self._port))
 
     def _get_logger(self):
@@ -171,7 +173,8 @@ class UDPMessenger(ProtocolListener):
     def stop(self):
         super(UDPMessenger, self).stop()
         self._broadcast_socket.close()
-        self._listening_broadcast_socket.close()
+        if self._listening_broadcast_socket is not None:
+            self._listening_broadcast_socket.close()
 
     @asyncio.coroutine
     def listen_message(self):
@@ -193,7 +196,7 @@ class UDPMessenger(ProtocolListener):
 
 
 class Messenger:
-    def __init__(self, mac, broadcast_address, broadcast_port, tcp_port, debug_port, node_id=None, loop=None):
+    def __init__(self, mac, broadcast_address, broadcast_port, tcp_port, node_id=None, loop=None):
         self._mac = mac
         self._node_id = node_id
         self._nodes = {}
@@ -208,12 +211,10 @@ class Messenger:
             self._tcp_messenger = TCPMessenger(tcp_port, self._io_executor, loop=self._loop)
         if broadcast_port != 0:
             self._udp_messenger = UDPMessenger(broadcast_address, broadcast_port, self._io_executor, True, self._loop)
-        self._debug_messenger = UDPMessenger(broadcast_address, debug_port, self._io_executor, False, self._loop)
 
         self._listeners = {
             'tcp': self._tcp_messenger,
             'udp': self._udp_messenger,
-            'debug': self._debug_messenger
         }
 
         for messenger in self._listeners.values():
@@ -300,11 +301,6 @@ class Messenger:
     def send_broadcast(self, message):
         message_bytes = self._serialize(message)
         yield from self._udp_messenger.send_message(message_bytes)
-
-    @asyncio.coroutine
-    def send_debug(self, message):
-        message_bytes = self._serialize(message)
-        yield from self._debug_messenger.send_message(message_bytes)
 
     @asyncio.coroutine
     def send_message(self, node_id, message):
