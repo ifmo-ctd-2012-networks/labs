@@ -23,7 +23,12 @@ class OwnerState(State):
         with auto_cancellation([heart_beat_timeout, calculating, calculating, transferring_token]):
             while True:
                 reading = asyncio.async(self._take_message(context))
-                done, pending = yield from asyncio.wait([heart_beat_timeout, calculating, reading], return_when=concurrent.futures.FIRST_COMPLETED)
+                fs = [heart_beat_timeout, reading]
+                if transferring_token is None:
+                    fs.append(calculating)
+                else:
+                    fs.append(transferring_token)
+                done, pending = yield from asyncio.wait(fs, return_when=concurrent.futures.FIRST_COMPLETED)
                 reading.cancel()
 
                 if heart_beat_timeout in done:

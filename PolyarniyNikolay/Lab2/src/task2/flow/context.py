@@ -65,20 +65,11 @@ class Context:
 
     @asyncio.coroutine
     def send_message_to_next(self, message_type: MessageType):
-        nodes = sorted(self._messenger.nodes.keys())
-        next_node_id = self.node_id
-        attempt = 1
-        while True:
-            next_node_id = nodes[(nodes.index(next_node_id) + 1) % len(nodes)]
-            message = self._construct_message(message_type)
-            steps_number = (nodes.index(next_node_id) - nodes.index(self.node_id) + len(nodes)) % len(nodes)
-            logger.debug('Sending message to next +{} node...{}'.format(steps_number, '' if attempt == 1 else ' (attempt #{})'.format(attempt)))
-            success = yield from self._messenger.send_message(next_node_id, message)
-            if success:
-                break
-            else:
-                logger.warn('Skipping node candidate to next!')
-                attempt += 1
+        next_node_id = self._messenger.get_next_available_node_id()
+        message = self._construct_message(message_type)
+        logger.info('Sending message to next node (node_id={})...'.format(next_node_id))
+        success = yield from self._messenger.send_message(next_node_id, message)
+        return success
 
     @asyncio.coroutine
     def calculate(self):
