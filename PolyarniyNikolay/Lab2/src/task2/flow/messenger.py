@@ -270,10 +270,14 @@ class Messenger:
                                            .format(self.nodes, message.nodes, host, self.nodes[node_id], node_id))
 
     def _add_node(self, node_id, host):
+        for old_node_id, old_host in self.nodes.items():
+            if old_host == host:
+                self._logger.error('IP collision! (new node id={}, new host={}, old node id={}, old ip={})'
+                                   .format(node_id, host, old_node_id, old_host))
         self.nodes[node_id] = host
         self._logger.info('New node: {} at {}! (total number: {})'.format(node_id, host, len(self.nodes)))
-        def format_node_id(node_id):
 
+        def format_node_id(node_id):
             return '{}{}'.format(node_id, '' if self.node_id != node_id else ' (me)')
         self._logger.info('Nodes order: {}'.format([(format_node_id(node_id), self.nodes[node_id]) for node_id in sorted(self.nodes.keys())]))
 
