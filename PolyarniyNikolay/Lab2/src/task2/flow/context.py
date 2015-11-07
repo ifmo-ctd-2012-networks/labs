@@ -77,7 +77,7 @@ class Context:
     def calculate(self):
         yield from asyncio.sleep(2.0)
         pi_data = '3,1415926535897932384626433832795028841971693993751058209749'
-        if len(self._data) == len(pi_data):
+        if len(self._data) >= len(pi_data):
             self._data += '239'[(len(self._data) - len(pi_data)) % 3]
         else:
             self._data = pi_data[:len(self._data) + 1]
