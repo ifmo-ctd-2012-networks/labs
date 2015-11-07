@@ -27,3 +27,7 @@ class Token:
         self._progress = state['progress']
         self._author_node_id = state['author_node_id']
         self._author_token_revision = state['author_token_revision']
+
+    def __str__(self, *args, **kwargs):
+        return "Token(progress={}, author_node_id={}, author_token_revision={})"\
+            .format(self._progress, self._author_node_id, self._author_token_revision)
