@@ -9,7 +9,6 @@ from task2.entity.consts import Const
 from task2.entity.messages import MessageType, Message, MESSAGES_TYPES_WITH_TOKEN, TakeTokenMessage, MessageWithToken, \
     ChangingStateBroadcast
 from task2.flow.messenger import Messenger, UDPMessenger
-from task2.utils import support
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +68,8 @@ class Context:
     def send_message_to_next(self, message_type: MessageType):
         next_node_id = self._messenger.get_next_available_node_id()
         message = self._construct_message(message_type)
-        logger.info('Sending message to next node (node_id={})...'.format(next_node_id))
+        logger.info('Sending message to next node (node_id={}, host={})...'
+                    .format(next_node_id, self._messenger.nodes[next_node_id]))
         success = yield from self._messenger.send_message(next_node_id, message)
         return success
 
@@ -113,7 +113,7 @@ class Context:
         if self._given_token is None:
             return Token(len(self._data), self.node_id, self._generated_tokens_revision)
         else:
-            return self._given_token
+            return Token(len(self._data), self._given_token._author_node_id, self._given_token._author_token_revision)
 
 
 class State:
