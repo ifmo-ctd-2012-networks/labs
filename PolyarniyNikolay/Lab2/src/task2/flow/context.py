@@ -19,7 +19,7 @@ class Context:
         self._state = state
         self._const = const
         self._messenger = messenger
-        self._debug_messenger = debug_messenger
+        # self._debug_messenger = debug_messenger
 
         self._data = ''
         self._generated_tokens_revision = 0
@@ -83,9 +83,10 @@ class Context:
             self._data = pi_data[:len(self._data) + 1]
 
     def notify_state_changed(self, old_state, new_state):
-        message = ChangingStateBroadcast(self.node_id, old_state, new_state)
-        logger.debug("Sending debug message: {}".format(message.__getstate__()))
-        support.wrap_exc(asyncio.async(self._debug_messenger.send_message(self._messenger._serialize(message))), logger)  # TODO: refactor
+        pass
+        # message = ChangingStateBroadcast(self.node_id, old_state, new_state)
+        # logger.debug("Sending debug message: {}".format(message.__getstate__()))
+        # support.wrap_exc(asyncio.async(self._debug_messenger.send_message(self._messenger._serialize(message))), logger)  # TODO: refactor
 
     @property
     def node_id(self):
