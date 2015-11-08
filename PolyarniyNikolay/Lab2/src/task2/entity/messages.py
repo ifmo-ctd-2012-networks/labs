@@ -1,5 +1,6 @@
 __author__ = "Polyarnyi Nickolay"
 
+import json
 from enum import Enum
 from abc import ABCMeta
 
@@ -139,3 +140,14 @@ TYPE_TO_CLASS.update({
     MessageType.TAKE_TOKEN: TakeTokenMessage,
     MessageType.CHANGING_STATE: ChangingStateBroadcast,
 })
+
+
+def serialize_message(message: Message, encoding='utf-8'):
+    state = message.__getstate__()
+    return json.dumps(state).encode(encoding)
+
+
+def deserialize_message(data_bytes, encoding='utf-8') -> Message:
+    message_state = json.loads(data_bytes.decode(encoding=encoding))
+    message_class = TYPE_TO_CLASS[MessageType((message_state['type'],))]
+    return create_object(message_class, message_state)

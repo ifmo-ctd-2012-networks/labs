@@ -82,8 +82,12 @@ def run_visualization_server(mac, broadcast_address, configuration):
     cfg_node = configuration['node']
     io_executor = AsyncExecutor(5, loop)
     global udp_messenger
-    logger.info("Debug port: {}".format(cfg_node['debug_port']))
-    udp_messenger = UDPMessenger(broadcast_address, cfg_node['debug_port'], io_executor, True, loop)
+    debug_cfg = cfg_node['debug']
+    if not debug_cfg['enabled']:
+        logger.error('Check config! Debug disabled!')
+        return
+    logger.info("Debug port: {}".format(debug_cfg['broadcasting_port']))
+    udp_messenger = UDPMessenger(broadcast_address, debug_cfg['broadcasting_port'], io_executor, True, loop)
     udp_messenger.start()
 
     asyncio.async(update_nodes())

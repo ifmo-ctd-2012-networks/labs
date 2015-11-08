@@ -10,7 +10,7 @@ from abc import abstractmethod
 
 from task2.utils.serialization import create_object
 from task2.entity.messages import TYPE_TO_CLASS, MessageType, TakeTokenMessage
-from task2.entity.messages import Message
+from task2.entity.messages import Message, deserialize_message, serialize_message
 from task2.utils.support import AsyncExecutor, auto_cancellation, wrap_exc
 
 ENCODING = 'utf-8'
@@ -52,7 +52,8 @@ class ProtocolListener:
         while True:
             address, data_bytes = yield from self.listen_message()
 
-            message = self._deserialize(data_bytes)
+            message = deserialize_message(data_bytes, ENCODING)
+            self._get_logger().debug('Deserialized message: {}...'.format(message.__getstate__()))
             if self._on_message is not None:
                 # noinspection PyCallingNonCallable
                 wrap_exc(asyncio.async(self._on_message(message, address)), self._get_logger())
@@ -239,10 +240,8 @@ class Messenger:
         self._io_executor.shutdown(wait=False)
 
     def _serialize(self, message: Message):
-        state = message.__getstate__()
-        self._logger.debug('Serialized message: {}...'.format(state))
-
-        return json.dumps(state).encode(encoding=ENCODING)
+        self._logger.debug('Serialized message: {}...'.format(message.__getstate__()))
+        return serialize_message(message, ENCODING)
 
     @asyncio.coroutine
     def _on_message(self, message: Message, address):

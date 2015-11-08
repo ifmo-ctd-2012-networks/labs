@@ -7,7 +7,10 @@ node:
 
     broadcasting_port: 23912
     tcp_port: 8239
-    debug_port: 23937
+
+    debug:
+        enabled: false
+        broadcasting_port: 23937
 
 logging:
     filename: Null  # if Null - stderr used

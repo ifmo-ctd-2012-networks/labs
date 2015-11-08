@@ -22,7 +22,11 @@ def run_node(mac, broadcast_address, cfg):
     hostname = cfg_node['hostname'] or mac
     messenger = Messenger(mac, broadcast_address, cfg_node['broadcasting_port'], cfg_node['tcp_port'], node_id=hostname)
     messenger.start()
-    debug_messenger = None  # UDPMessenger(broadcast_address, cfg_node['debug_port'], AsyncExecutor(2), False)
+    debug_cfg = cfg_node['debug']
+    if debug_cfg['enabled']:
+        debug_messenger = UDPMessenger(broadcast_address, debug_cfg['broadcasting_port'], AsyncExecutor(2), False)
+    else:
+        debug_messenger = None
 
     context = Context(None, consts, messenger, debug_messenger)
 

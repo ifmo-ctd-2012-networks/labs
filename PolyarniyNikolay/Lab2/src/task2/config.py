@@ -13,7 +13,7 @@ def create_default():
 
             "debug": {
                 "enabled": False,
-                "broadcasting_port": 23930,
+                "broadcasting_port": 23937,
             }
         },
 
