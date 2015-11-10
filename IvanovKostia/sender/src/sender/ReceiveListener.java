@@ -1,7 +1,5 @@
 package sender;
 
-import sender.message.Message;
-
 import java.net.InetSocketAddress;
 
 @FunctionalInterface
