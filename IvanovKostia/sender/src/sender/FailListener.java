@@ -4,5 +4,5 @@ import java.net.InetSocketAddress;
 
 @FunctionalInterface
 public interface FailListener {
-    void onFail(InetSocketAddress address);
+    void onFail(InetSocketAddress badNode);
 }

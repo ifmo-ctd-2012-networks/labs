@@ -1,8 +1,8 @@
 package sender.message;
 
-import sender.Message;
+import sender.ResponseMessage;
 
-public class VoidMessage extends Message {
+public class VoidMessage extends ResponseMessage {
     private VoidMessage() {
         super();
     }
