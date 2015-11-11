@@ -70,6 +70,9 @@ public class LostTokenState implements AutoCloseable {
      * @return whether this method invocation changed value of goingToStayAsIs
      */
     private boolean goToStayAsIs() {
+        // All guys at military faculty heard as Ruslan said about this code:
+        // "This is useless in practice".
+        // It isn't at all
         try {
             return !goingToStayAsIs;
         } finally {
